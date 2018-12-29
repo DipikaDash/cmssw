@@ -1,0 +1,85 @@
+DEBUG 2018-12-27 17:46:28,593: 	 Executing command: 'submit'
+DEBUG 2018-12-27 17:46:28,604: 	 Found CRAB cache file /uscms/home/ddash/.crab3
+DEBUG 2018-12-27 17:46:28,617: 	 Checking credentials
+DEBUG 2018-12-27 17:46:28,617: 	 Found proxy file /tmp/x509up_u52937
+DEBUG 2018-12-27 17:46:28,617: 	 Getting proxy life time left
+DEBUG 2018-12-27 17:46:28,721: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -timeleft
+ output : 85874
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:28,825: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -actimeleft
+ output : 85874
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:28,826: 	 Proxy valid for 23:51:14 hours
+DEBUG 2018-12-27 17:46:28,827: 	 Will use CRAB Analysis plugin (i.e. will run an analysis job type).
+DEBUG 2018-12-27 17:46:28,949: 	 Executing : 
+ command : openssl x509 -in ~/.globus/usercert.pem -subject -noout
+ output : subject= /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:28,950: 	 Checking credentials
+DEBUG 2018-12-27 17:46:28,950: 	 Found proxy file /tmp/x509up_u52937
+DEBUG 2018-12-27 17:46:28,950: 	 Getting proxy life time left
+DEBUG 2018-12-27 17:46:29,054: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -timeleft
+ output : 85873
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:29,158: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -actimeleft
+ output : 85873
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:29,158: 	 Proxy valid for 23:51:13 hours
+DEBUG 2018-12-27 17:46:29,262: 	 Executing : 
+ command : env X509_USER_PROXY=/tmp/x509up_u52937 voms-proxy-info -fqan
+ output : /cms/Role=NULL/Capability=NULL
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:30,426: 	 Registering user credentials for server /DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch
+DEBUG 2018-12-27 17:46:30,536: 	 Executing : 
+ command : openssl x509 -in ~/.globus/usercert.pem -subject -noout
+ output : subject= /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:30,537: 	 Getting myproxy life time left for myproxy.cern.ch
+DEBUG 2018-12-27 17:46:30,537: 	 Calculating hash of /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash_cmsweb.cern.ch for credential name
+DEBUG 2018-12-27 17:46:31,342: 	 Executing : 
+ command : myproxy-info -l aad4b2c1b937760f40d1cc9752f3390eba7a72d1 -s myproxy.cern.ch
+ output : 
+ error: ERROR from myproxy-server:
+no credentials found for user aad4b2c1b937760f40d1cc9752f3390eba7a72d1, owner "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash" 
+
+ retcode : 1
+DEBUG 2018-12-27 17:46:31,342: 	 Myproxy is valid: -1
+DEBUG 2018-12-27 17:46:31,447: 	 Executing : 
+ command : openssl x509 -noout -in ~/.globus/usercert.pem -dates
+ output : notBefore=Dec 26 05:06:13 2018 GMT
+notAfter=Jan 30 05:06:13 2020 GMT
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:31,459: 	 Delegating a myproxy for 720:00 hours
+DEBUG 2018-12-27 17:46:31,460: 	 Calculating hash of /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash_cmsweb.cern.ch for credential name
+DEBUG 2018-12-27 17:46:38,879: 	 Executing : 
+ command : export GT_PROXY_MODE=rfc ; myproxy-init -d -n -s myproxy.cern.ch -x -R '/DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch' -x -Z '/DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch' -l 'aad4b2c1b937760f40d1cc9752f3390eba7a72d1' -t 168:00 -c 720:00
+ output : Your identity: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+Creating proxy .................................................. Done
+Proxy Verify OK
+A proxy valid for 720 hours (30.0 days) for user aad4b2c1b937760f40d1cc9752f3390eba7a72d1 now exists on myproxy.cern.ch.
+
+ error: 
+Warning: your certificate and proxy will expire Sat Jan 12 02:17:35 2019
+ which is within the requested lifetime of the proxy
+
+ retcode : 0

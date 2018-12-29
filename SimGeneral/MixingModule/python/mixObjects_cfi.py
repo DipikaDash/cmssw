@@ -47,6 +47,7 @@ mixSimHits = cms.PSet(
     #    'TotemHitsRP',
     #    'TotemHitsT1',
     #    'TotemHitsT2Gem')
+    pcrossingFrames = cms.untracked.vstring()
 )
 
 # fastsim customs
@@ -55,7 +56,7 @@ fastSim.toModify(mixSimHits,
     input = ["MuonSimHits:MuonCSCHits", 
              "MuonSimHits:MuonDTHits", 
              "MuonSimHits:MuonRPCHits", 
-             "famosSimHits:TrackerHits"],
+             "fastSimProducer:TrackerHits"],
     subdets = ['MuonCSCHits', 
                'MuonDTHits', 
                'MuonRPCHits', 
@@ -89,10 +90,10 @@ mixCaloHits = cms.PSet(
 
 # fastsim customs
 fastSim.toModify(mixCaloHits,
-    input = ["famosSimHits:EcalHitsEB",
-             "famosSimHits:EcalHitsEE",
-             "famosSimHits:EcalHitsES",
-             "famosSimHits:HcalHits"],
+    input = ["fastSimProducer:EcalHitsEB",
+             "fastSimProducer:EcalHitsEE",
+             "fastSimProducer:EcalHitsES",
+             "fastSimProducer:HcalHits"],
     subdets = ['EcalHitsEB',
                'EcalHitsEE',
                'EcalHitsES',
@@ -112,8 +113,8 @@ mixSimVertices = cms.PSet(
 )
 
 # fastsim customs
-fastSim.toModify(mixSimTracks, input = ["famosSimHits"])
-fastSim.toModify(mixSimVertices, input = ["famosSimHits"])
+fastSim.toModify(mixSimTracks, input = ["fastSimProducer"])
+fastSim.toModify(mixSimVertices, input = ["fastSimProducer"])
     
 mixHepMCProducts = cms.PSet(
     makeCrossingFrame = cms.untracked.bool(True),
@@ -236,6 +237,12 @@ phase2_muon.toModify( theMixObjects,
         input = theMixObjects.mixSH.input + [ cms.InputTag("g4SimHits","MuonME0Hits") ],
         subdets = theMixObjects.mixSH.subdets + [ 'MuonME0Hits' ],
         crossingFrames = theMixObjects.mixSH.crossingFrames + [ 'MuonME0Hits' ]
+    )
+)
+from Configuration.ProcessModifiers.premix_stage1_cff import premix_stage1
+(premix_stage1 & phase2_muon).toModify(theMixObjects,
+    mixSH = dict(
+        pcrossingFrames = theMixObjects.mixSH.pcrossingFrames + [ 'MuonME0Hits' ]
     )
 )
 from Configuration.Eras.Modifier_phase2_hgcal_cff import phase2_hgcal

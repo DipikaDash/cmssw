@@ -62,6 +62,8 @@ public :
   std::vector<bool>         *PF_Muon;
   std::vector<bool>         *Global_Muon;
   std::vector<bool>         *Tracker_muon;
+  std::vector<bool>         *MuonIsTight;
+  std::vector<bool>         *MuonIsMedium;
   std::vector<double>       *pt_of_muon;
   std::vector<double>       *eta_of_muon;
   std::vector<double>       *phi_of_muon;
@@ -109,6 +111,8 @@ public :
   std::vector<unsigned int> *ecal_detID;
   std::vector<unsigned int> *hcal_detID;
   std::vector<unsigned int> *ehcal_detID;
+  std::vector<int>          *hcal_ieta;
+  std::vector<int>          *hcal_iphi;
   std::vector<double>       *hcal_edepth1;
   std::vector<double>       *hcal_activeL1;
   std::vector<double>       *hcal_edepthHot1;
@@ -193,6 +197,8 @@ public :
   TBranch                   *b_PF_Muon;                             //!
   TBranch                   *b_Global_Muon;                         //!
   TBranch                   *b_Tracker_muon;                        //!
+  TBranch                   *b_MuonIsTight;                         //!
+  TBranch                   *b_MuonIsMedium;                        //!
   TBranch                   *b_pt_of_muon;                          //!
   TBranch                   *b_eta_of_muon;                         //!
   TBranch                   *b_phi_of_muon;                         //!
@@ -240,6 +246,8 @@ public :
   TBranch                   *b_hcal_detID;                          //!
   TBranch                   *b_ecal_detID;                          //!
   TBranch                   *b_ehcal_detID;                         //!
+  TBranch                   *b_hcal_ieta;                           //!
+  TBranch                   *b_hcal_iphi;                           //!
   TBranch                   *b_hcal_edepth1;                        //!
   TBranch                   *b_hcal_activeL1;                       //!
   TBranch                   *b_hcal_edepthHot1;                     //!
@@ -365,7 +373,7 @@ private:
   std::vector<double> t_ene, t_enec, t_actln, t_charge;
   std::vector<int>    t_depth;
   
-  TH1D  *h_Pt_Muon[3], *h_Eta_Muon[3], *h_Phi_Muon[3], *h_P_Muon[3];
+  TH1D  *h_evtype, *h_Pt_Muon[3], *h_Eta_Muon[3], *h_Phi_Muon[3], *h_P_Muon[3];
   TH1D  *h_PF_Muon[3], *h_GlobTrack_Chi[3], *h_Global_Muon_Hits[3];
   TH1D  *h_MatchedStations[3], *h_Tight_TransImpactparameter[3];
   TH1D  *h_Tight_LongitudinalImpactparameter[3], *h_InnerTrackPixelHits[3];
@@ -616,6 +624,8 @@ void HBHEMuonOfflineAnalyzer::Init(TTree *tree, int flag, int mode, int maxDHB,
   fChain->SetBranchAddress("PF_Muon", &PF_Muon, &b_PF_Muon);
   fChain->SetBranchAddress("Global_Muon", &Global_Muon, &b_Global_Muon);
   fChain->SetBranchAddress("Tracker_muon", &Tracker_muon, &b_Tracker_muon);
+  fChain->SetBranchAddress("MuonIsTight", &MuonIsTight, &b_MuonIsTight);
+  fChain->SetBranchAddress("MuonIsMedium", &MuonIsMedium, &b_MuonIsMedium);
   fChain->SetBranchAddress("pt_of_muon", &pt_of_muon, &b_pt_of_muon);
   fChain->SetBranchAddress("eta_of_muon", &eta_of_muon, &b_eta_of_muon);
   fChain->SetBranchAddress("phi_of_muon", &phi_of_muon, &b_phi_of_muon);
@@ -663,6 +673,8 @@ void HBHEMuonOfflineAnalyzer::Init(TTree *tree, int flag, int mode, int maxDHB,
   fChain->SetBranchAddress("ecal_detID", &ecal_detID, &b_ecal_detID);
   fChain->SetBranchAddress("hcal_detID", &hcal_detID, &b_hcal_detID);
   fChain->SetBranchAddress("ehcal_detID", &ehcal_detID, &b_ehcal_detID);
+  fChain->SetBranchAddress("hcal_ieta", &hcal_ieta, &b_hcal_ieta);
+  fChain->SetBranchAddress("hcal_iphi", &hcal_iphi, &b_hcal_iphi);
   fChain->SetBranchAddress("hcal_edepth1", &hcal_edepth1, &b_hcal_edepth1);
   fChain->SetBranchAddress("hcal_activeL1", &hcal_activeL1, &b_hcal_activeL1);
   fChain->SetBranchAddress("hcal_edepthHot1", &hcal_edepthHot1, &b_hcal_edepthHot1);
@@ -758,6 +770,8 @@ void HBHEMuonOfflineAnalyzer::Loop() {
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     if ((int)(Run_No) < runLo_ || (int)(Run_No) > runHi_) continue;
     if (debug_) std::cout << "Run " << Run_No << " Event " << Event_No << " Muons " << pt_of_muon->size() << std::endl;
+
+    bool loose(false), soft(false), tight(false), pcut(false), ptcut(false);
     for (unsigned int ml = 0; ml< pt_of_muon->size(); ml++) {
       
       t_ene.clear(); t_enec.clear(); t_charge.clear(); t_actln.clear();
@@ -786,6 +800,11 @@ void HBHEMuonOfflineAnalyzer::Loop() {
       t_iphi          = PHI;
       t_p             = p_of_muon->at(ml);
       t_nvtx          = GoodVertex;
+      if (p_of_muon->at(ml) > 20)  pcut = true;
+      if (pt_of_muon->at(ml) > 20) ptcut = true;
+      if (LooseMuon(ml))           loose = true;
+      if (SoftMuon(ml))            soft  = true;
+      if (tightMuon(ml))           tight = true;
       
       if (debug_) 
 	std::cout << " etaHcal " << etaHcal << ":" << etaXHcal << " phiHcal " 
@@ -1082,6 +1101,13 @@ void HBHEMuonOfflineAnalyzer::Loop() {
 	}
       }
     }
+    int evtype(0);
+    if (pcut)  evtype += 1;
+    if (ptcut) evtype += 2;
+    if (loose) evtype += 4;
+    if (soft)  evtype += 8;
+    if (tight) evtype += 16;
+    h_evtype->Fill(evtype);
   }
   close();
 }
@@ -1144,6 +1170,7 @@ void HBHEMuonOfflineAnalyzer::BookHistograms(const char* fname) {
   }
   //	TDirectory *d_output_file[nCut_][29];
   //output_file->cd();
+  h_evtype = new TH1D("EvType", "Event Type", 100,0,100);
   for (int i=0; i<nCut_; ++i) {
     sprintf (name,  "h_Pt_Muon_%s", type[i].c_str());
     sprintf (title, "p_{T} of %s muons (GeV)", type[i].c_str());
@@ -1368,7 +1395,7 @@ void HBHEMuonOfflineAnalyzer::BookHistograms(const char* fname) {
 bool HBHEMuonOfflineAnalyzer::LooseMuon(unsigned int ml) {
   if (pt_of_muon->at(ml) > 20.) {
     if (mediumMuon2016(ml)) {
-      if (IsolationR04->at(ml) < 0.15) { 
+      if (IsolationR04->at(ml) < 0.25) { 
 	return true;   
       }
     }  
@@ -1379,7 +1406,7 @@ bool HBHEMuonOfflineAnalyzer::LooseMuon(unsigned int ml) {
 bool HBHEMuonOfflineAnalyzer::SoftMuon(unsigned int ml) {
   if (pt_of_muon->at(ml) > 20.) {
     if (mediumMuon2016(ml)) {
-      if (IsolationR04->at(ml) < 0.15) { 
+      if (IsolationR03->at(ml) < 0.10) { 
 	return true;   
       }
     }  
@@ -1497,6 +1524,7 @@ void HBHEMuonOfflineAnalyzer::WriteHistograms() {
   }
 
   TDirectory *d_output_file[nCut_][29];
+  h_evtype->Write();
   //output_file->cd();
   for (int i=0; i<nCut_; ++i) {
     

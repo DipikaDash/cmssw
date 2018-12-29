@@ -13,7 +13,7 @@ cd $W_DIR;
 ####################
 # Test Noise
 ####################
-/afs/cern.ch/user/c/condbpro/public/BROWSER_PI/getPayloadData.py \
+getPayloadData.py \
     --plugin pluginSiStripNoises_PayloadInspector \
     --plot plot_SiStripNoisesTest \
     --tag SiStripNoise_v2_prompt \
@@ -23,6 +23,7 @@ cd $W_DIR;
     --test;
 
 estimators=(Mean Min Max RMS)
+plotTypes=(Strip APV Module)
 
 mkdir -p $W_DIR/results
 
@@ -35,7 +36,7 @@ do
 
     #// TrackerMaps
 
-    /afs/cern.ch/user/c/condbpro/public/BROWSER_PI/getPayloadData.py \
+    getPayloadData.py \
 	--plugin pluginSiStripNoises_PayloadInspector \
 	--plot plot_SiStripNoise${i}_TrackerMap \
 	--tag SiStripNoise_v2_prompt \
@@ -48,7 +49,7 @@ do
 
     #// Summaries
 
-    /afs/cern.ch/user/c/condbpro/public/BROWSER_PI/getPayloadData.py \
+    getPayloadData.py \
 	--plugin pluginSiStripNoises_PayloadInspector \
 	--plot plot_SiStripNoise${i}ByRegion \
 	--tag SiStripNoise_v2_prompt \
@@ -61,3 +62,28 @@ do
 
 done
 
+for j in "${plotTypes[@]}"
+do  
+    getPayloadData.py \
+	--plugin pluginSiStripNoises_PayloadInspector \
+	--plot plot_SiStripNoiseValuePer${j} \
+	--tag SiStripNoise_GR10_v1_hlt \
+	--time_type Run \
+	--iovs  '{"start_iov": "313210", "end_iov": "313120"}' \
+	--db Prod \
+	--test;
+	
+    mv *.png $W_DIR/results/SiStripNoisesPer${j}Values.png
+
+    getPayloadData.py \
+	--plugin pluginSiStripNoises_PayloadInspector \
+	--plot plot_SiStripNoiseValueComparisonPer${j} \
+	--tag SiStripNoise_GR10_v1_hlt \
+	--time_type Run \
+	--iovs '{"start_iov": "312968", "end_iov": "313120"}' \
+	--db Prod \
+	--test ;
+
+    mv *.png $W_DIR/results/SiStripNoisesPer${j}Comparison.png
+
+done

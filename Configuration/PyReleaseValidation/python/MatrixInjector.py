@@ -110,7 +110,7 @@ class MatrixInjector(object):
             "Multicore" : 1,   # do not set multicore for the whole chain
             "Memory" : 3000,
             "SizePerEvent" : 1234,
-            "TimePerEvent" : 0.1,
+            "TimePerEvent" : 10,
             "PrepID": os.getenv('CMSSW_VERSION')
             }
 
@@ -212,10 +212,24 @@ class MatrixInjector(object):
             wmsplit['RECODR2_2017reHLT_skimDoubleEG_Prompt']=1
             wmsplit['RECODR2_2017reHLT_skimMET_Prompt']=1
             wmsplit['RECODR2_2017reHLT_skimMuOnia_Prompt']=1
+            wmsplit['RECODR2_2017reHLT_Prompt_L1TEgDQM']=1
+            wmsplit['RECODR2_2018reHLT_Prompt']=1
+            wmsplit['RECODR2_2018reHLT_skimSingleMu_Prompt_Lumi']=1
+            wmsplit['RECODR2_2018reHLT_skimDoubleEG_Prompt']=1
+            wmsplit['RECODR2_2018reHLT_skimJetHT_Prompt']=1
+            wmsplit['RECODR2_2018reHLT_skimMET_Prompt']=1
+            wmsplit['RECODR2_2018reHLT_skimMuOnia_Prompt']=1
+            wmsplit['RECODR2_2018reHLT_skimEGamma_Prompt_L1TEgDQM']=1
+            wmsplit['RECODR2_2018reHLT_skimMuonEG_Prompt']=1
+            wmsplit['RECODR2_2018reHLT_skimCharmonium_Prompt']=1
+            wmsplit['RECODR2_2018reHLT_skimJetHT_Prompt_HEfail']=1
+            wmsplit['RECODR2_2018reHLT_skimJetHT_Prompt_BadHcalMitig']=1
             wmsplit['HLTDR2_50ns']=1
             wmsplit['HLTDR2_25ns']=1
             wmsplit['HLTDR2_2016']=1
             wmsplit['HLTDR2_2017']=1
+            wmsplit['HLTDR2_2018']=1
+            wmsplit['HLTDR2_2018_BadHcalMitig']=1
             wmsplit['Hadronizer']=1
             wmsplit['DIGIUP15']=1 
             wmsplit['RECOUP15']=1 
@@ -232,9 +246,15 @@ class MatrixInjector(object):
             wmsplit['RECOUP17']=1
             wmsplit['DIGIUP17_PU25']=1
             wmsplit['RECOUP17_PU25']=1
+            wmsplit['DIGICOS_UP16']=1
+            wmsplit['RECOCOS_UP16']=1
             wmsplit['DIGICOS_UP17']=1
             wmsplit['RECOCOS_UP17']=1
-
+            wmsplit['DIGICOS_UP18']=1
+            wmsplit['RECOCOS_UP18']=1
+            wmsplit['HYBRIDRepackHI2015VR']=1
+            wmsplit['HYBRIDZSHI2015']=1
+            wmsplit['RECOHID15']=1
                                     
             #import pprint
             #pprint.pprint(wmsplit)            
@@ -304,6 +324,8 @@ class MatrixInjector(object):
                                     print "Failed to find",'%s/%s.io'%(dir,step),".The workflows were probably not run on cfg not created"
                                     return -15
                                 chainDict['nowmTasklist'][-1]['InputDataset']=nextHasDSInput.dataSet
+                                if ('DQMHLTonRAWAOD' in step) :
+                                    chainDict['nowmTasklist'][-1]['IncludeParents']=True
                                 splitForThisWf=nextHasDSInput.split
                                 chainDict['nowmTasklist'][-1]['LumisPerJob']=splitForThisWf
                                 if step in wmsplit:
@@ -359,7 +381,7 @@ class MatrixInjector(object):
                                     processStrPrefix='PU25ns_'
                                 elif   (  s[2][index].split()[  s[2][index].split().index('--pileup')+1 ]  ).find('50ns')  > 0 :
                                     processStrPrefix='PU50ns_'
-                            if 'DIGIPREMIX_S2' in s[2][index] : # take care of pu overlay done with DIGI mixing of premixed events
+                            if 'premix_stage2' in s[2][index] and '--pileup_input' in s[2][index]: # take care of pu overlay done with DIGI mixing of premixed events
                                 if s[2][index].split()[ s[2][index].split().index('--pileup_input')+1  ].find('25ns')  > 0 :
                                     processStrPrefix='PUpmx25ns_'
                                 elif s[2][index].split()[ s[2][index].split().index('--pileup_input')+1  ].find('50ns')  > 0 :
@@ -462,7 +484,7 @@ class MatrixInjector(object):
             itask=0
             if self.keep:
                 for i in self.keep:
-                    if type(i)==int and i < len(chainDict['nowmTasklist']):
+                    if isinstance(i, int) and i < len(chainDict['nowmTasklist']):
                         chainDict['nowmTasklist'][i]['KeepOutput']=True
             for (i,t) in enumerate(chainDict['nowmTasklist']):
                 if t['TaskName'].startswith('HARVEST'):
@@ -471,6 +493,8 @@ class MatrixInjector(object):
                     t['KeepOutput']=True
                 elif t['TaskName'] in self.keep:
                     t['KeepOutput']=True
+                if t['TaskName'].startswith('HYBRIDRepackHI2015VR'):
+                    t['KeepOutput']=False
                 t.pop('nowmIO')
                 itask+=1
                 chainDict['Task%d'%(itask)]=t

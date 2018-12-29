@@ -11,10 +11,14 @@
 
 BPHMonitor::BPHMonitor( const edm::ParameterSet& iConfig ) : 
   folderName_ ( iConfig.getParameter<std::string>("FolderName") )
-  , muoToken_ ( mayConsume<reco::MuonCollection> (iConfig.getParameter<edm::InputTag>("muons") ) )  
-  , bsToken_ ( mayConsume<reco::BeamSpot> (iConfig.getParameter<edm::InputTag>("beamSpot")))
-  , trToken_ ( mayConsume<reco::TrackCollection> (iConfig.getParameter<edm::InputTag>("tracks")))
-  , phToken_ ( mayConsume<reco::PhotonCollection> (iConfig.getParameter<edm::InputTag>("photons")))
+  , muoInputTag_ ( iConfig.getParameter<edm::InputTag>("muons")    )
+  , bsInputTag_  ( iConfig.getParameter<edm::InputTag>("beamSpot") )
+  , trInputTag_  ( iConfig.getParameter<edm::InputTag>("tracks")   )
+  , phInputTag_  ( iConfig.getParameter<edm::InputTag>("photons")  )
+  , muoToken_ ( mayConsume<reco::MuonCollection>   ( muoInputTag_ ) )
+  , bsToken_  ( mayConsume<reco::BeamSpot>         ( bsInputTag_ )  )
+  , trToken_  ( mayConsume<reco::TrackCollection>  ( trInputTag_ )  )
+  , phToken_  ( mayConsume<reco::PhotonCollection> ( phInputTag_ )  )
   , phi_binning_ ( getHistoPSet (iConfig.getParameter<edm::ParameterSet>("histoPSet").getParameter<edm::ParameterSet> ("phiPSet") ) )
   , pt_binning_ ( getHistoPSet (iConfig.getParameter<edm::ParameterSet>("histoPSet").getParameter<edm::ParameterSet> ("ptPSet") ) )
   , eta_binning_ ( getHistoPSet (iConfig.getParameter<edm::ParameterSet>("histoPSet").getParameter<edm::ParameterSet> ("etaPSet") ) )
@@ -28,7 +32,6 @@ BPHMonitor::BPHMonitor( const edm::ParameterSet& iConfig ) :
   , prob_binning_ ( getHistoPSet (iConfig.getParameter<edm::ParameterSet>("histoPSet").getParameter<edm::ParameterSet> ("probPSet") ) )
   , num_genTriggerEventFlag_(new GenericTriggerEventFlag(iConfig.getParameter<edm::ParameterSet>("numGenericTriggerEventPSet"),consumesCollector(), *this))
   , den_genTriggerEventFlag_(new GenericTriggerEventFlag(iConfig.getParameter<edm::ParameterSet>("denGenericTriggerEventPSet"),consumesCollector(), *this))
-  , prescaleWeightProvider_( new PrescaleWeightProvider( iConfig.getParameter<edm::ParameterSet>("PrescaleTriggerEventPSet"),consumesCollector(), *this))
   , muoSelection_ ( iConfig.getParameter<std::string>("muoSelection") )
   , muoSelection_ref ( iConfig.getParameter<std::string>("muoSelection_ref") )
   , muoSelection_tag ( iConfig.getParameter<std::string>("muoSelection_tag") )
@@ -58,7 +61,7 @@ BPHMonitor::BPHMonitor( const edm::ParameterSet& iConfig ) :
   , mincos ( iConfig.getParameter<double>("mincos" ) )
   , minDS ( iConfig.getParameter<double>("minDS" ) )
   , hltTrigResTag_ (mayConsume<edm::TriggerResults>( iConfig.getParameter<edm::ParameterSet>("denGenericTriggerEventPSet").getParameter<edm::InputTag>("hltInputTag")))
-  , hltInputTag_ (mayConsume<trigger::TriggerEvent>( iConfig.getParameter<edm::InputTag>("hltTriggerSummaryAOD")))
+  , hltInputTag_ (mayConsume<trigger::TriggerEvent>( iConfig.getParameter<edm::InputTag>("hltTriggerSummaryAOD"))) /* mia : you should make it configurable !!!" */
   , hltpaths_num ( iConfig.getParameter<edm::ParameterSet>("numGenericTriggerEventPSet").getParameter<std::vector<std::string>>("hltPaths"))
   , hltpaths_den ( iConfig.getParameter<edm::ParameterSet>("denGenericTriggerEventPSet").getParameter<std::vector<std::string>>("hltPaths"))
   , trSelection_ ( iConfig.getParameter<std::string>("muoSelection") )
@@ -126,13 +129,18 @@ BPHMonitor::BPHMonitor( const edm::ParameterSet& iConfig ) :
   DiMudR_.denominator = nullptr;
 
 
+  // this vector has to be alligned to the the number of Tokens accessed by this module
+  warningPrinted4token_.push_back(false); // MuonCollection
+  warningPrinted4token_.push_back(false); // BeamSpot
+  warningPrinted4token_.push_back(false); // TrackCollection
+  warningPrinted4token_.push_back(false); // PhotonCollection
+
 }
 
 BPHMonitor::~BPHMonitor()
 {
   if (num_genTriggerEventFlag_) delete num_genTriggerEventFlag_;
   if (den_genTriggerEventFlag_) delete den_genTriggerEventFlag_;
-  delete prescaleWeightProvider_;
 }
 
 MEbinning BPHMonitor::getHistoPSet(edm::ParameterSet pset)
@@ -336,7 +344,6 @@ void BPHMonitor::bookHistograms(DQMStore::IBooker     & ibooker,
   // Initialize the GenericTriggerEventFlag
   if ( num_genTriggerEventFlag_ && num_genTriggerEventFlag_->on() ) num_genTriggerEventFlag_->initRun( iRun, iSetup );
   if ( den_genTriggerEventFlag_ && den_genTriggerEventFlag_->on() ) den_genTriggerEventFlag_->initRun( iRun, iSetup );
-  prescaleWeightProvider_->initRun( iRun, iSetup );
 }
 
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -348,23 +355,43 @@ void BPHMonitor::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
 
   edm::Handle<reco::BeamSpot> beamSpot;
   iEvent.getByToken( bsToken_,  beamSpot);
+  if ( !beamSpot.isValid() ) {
+    if (!warningPrinted4token_[0]) {
+      warningPrinted4token_[0] = true;
+      edm::LogWarning("BPHMonitor") << "skipping events because the collection " << bsInputTag_.label().c_str() << " is not available";
+    }
+    return;
+  }
 
   edm::Handle<reco::MuonCollection> muoHandle;
   iEvent.getByToken( muoToken_, muoHandle );
+  if ( !muoHandle.isValid() ) {
+    if (!warningPrinted4token_[1]) {
+      warningPrinted4token_[1] = true;
+      edm::LogWarning("BPHMonitor") << "skipping events because the collection " << muoInputTag_.label().c_str() << " is not available";
+    }
+    return;
+  }
 
   edm::Handle<reco::TrackCollection> trHandle;
   iEvent.getByToken( trToken_, trHandle );
+  if ( !trHandle.isValid() ) {
+    if (!warningPrinted4token_[2]) {
+      warningPrinted4token_[2] = true;
+      edm::LogWarning("BPHMonitor") << "skipping events because the collection " << trInputTag_.label().c_str() << " is not available";
+    }
+    return;
+  }
 
   edm::Handle<reco::PhotonCollection> phHandle;
   iEvent.getByToken( phToken_, phHandle );
-
 
   edm::Handle<edm::TriggerResults> handleTriggerTrigRes; 
 
   edm::Handle<trigger::TriggerEvent> handleTriggerEvent; 
   edm::ESHandle<MagneticField> bFieldHandle;
   // Filter out events if Trigger Filtering is requested
-  double PrescaleWeight = prescaleWeightProvider_->prescaleWeight( iEvent, iSetup );  
+  double PrescaleWeight = 1;  
   
   if (tnp_> 0) { // TnP method 
     if (den_genTriggerEventFlag_->on() && ! den_genTriggerEventFlag_->accept( iEvent, iSetup) ) return;
@@ -686,13 +713,24 @@ void BPHMonitor::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
 
     if (enum_ == 7) { // photons
       const std::string & hltpath = hltpaths_den[0];
-      for (auto const & p : *phHandle) {
-	if (false && !matchToTrigger(hltpath,p, handleTriggerEvent)) continue;
-	phPhi_.denominator->Fill(p.phi());
-	phEta_.denominator->Fill(p.eta());
-	phPt_.denominator ->Fill(p.pt());
+      if ( phHandle.isValid() ) {
+	for (auto const & p : *phHandle) {
+	  if (false && !matchToTrigger(hltpath,p, handleTriggerEvent)) continue;
+	  phPhi_.denominator->Fill(p.phi());
+	  phEta_.denominator->Fill(p.eta());
+	  phPt_.denominator ->Fill(p.pt());
+	}
+      } else {
+	if (!warningPrinted4token_[3]) {
+	  warningPrinted4token_[3] = true;
+	  if ( phInputTag_.label().empty() )
+	    edm::LogWarning("BPHMonitor") << "PhotonCollection not set";
+	  else
+	    edm::LogWarning("BPHMonitor") << "skipping events because the collection " << phInputTag_.label().c_str() << " is not available";
+	}
+	// if Handle is not valid, because the InputTag has been mis-configured, then skip the event
+	if ( !phInputTag_.label().empty() ) return;
       }
-
     } 
     //
     /////////
@@ -968,11 +1006,13 @@ void BPHMonitor::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
     }
     if (enum_ == 7) { // photons
       const std::string &hltpath = hltpaths_num[0];
-      for (auto const & p : *phHandle) {
-	if (false && !matchToTrigger(hltpath,p, handleTriggerEvent)) continue;
-	phPhi_.numerator->Fill(p.phi(),PrescaleWeight);
-	phEta_.numerator->Fill(p.eta(),PrescaleWeight);
-	phPt_.numerator ->Fill(p.pt(),PrescaleWeight);
+      if ( phHandle.isValid() ) {
+	for (auto const & p : *phHandle) {
+	  if (false && !matchToTrigger(hltpath,p, handleTriggerEvent)) continue;
+	  phPhi_.numerator->Fill(p.phi(),PrescaleWeight);
+	  phEta_.numerator->Fill(p.eta(),PrescaleWeight);
+	  phPt_.numerator ->Fill(p.pt(),PrescaleWeight);
+	}
       }
     }
   }
@@ -1055,13 +1095,6 @@ void BPHMonitor::fillDescriptions(edm::ConfigurationDescriptions & descriptions)
   genericTriggerEventPSet.add<unsigned int>("verbosityLevel",0);
   desc.add<edm::ParameterSetDescription>("numGenericTriggerEventPSet", genericTriggerEventPSet);
   desc.add<edm::ParameterSetDescription>("denGenericTriggerEventPSet", genericTriggerEventPSet);
-
-  edm::ParameterSetDescription PrescaleTriggerEventPSet;
-  PrescaleTriggerEventPSet.add<unsigned int>("prescaleWeightVerbosityLevel",0);
-  PrescaleTriggerEventPSet.add<edm::InputTag>("prescaleWeightTriggerResults",edm::InputTag("TriggerResults::HLT"));
-  PrescaleTriggerEventPSet.add<edm::InputTag>("prescaleWeightL1GtTriggerMenuLite",edm::InputTag("l1GtTriggerMenuLite"));
-  PrescaleTriggerEventPSet.add<std::vector<std::string>>("prescaleWeightHltPaths",{});
-  desc.add<edm::ParameterSetDescription>("PrescaleTriggerEventPSet", PrescaleTriggerEventPSet);
 
   edm::ParameterSetDescription histoPSet;
   edm::ParameterSetDescription phiPSet;

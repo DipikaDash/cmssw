@@ -36,7 +36,7 @@ void CSCGEMMotherboardME21::clear()
   CSCMotherboard::clear();
   CSCGEMMotherboard::clear();
 
-  for (int bx = 0; bx < MAX_LCT_BINS; bx++) {
+  for (int bx = 0; bx < CSCConstants::MAX_LCT_TBINS; bx++) {
     for (unsigned int mbx = 0; mbx < match_trig_window_size; mbx++) {
       for (int i=0;i<CSCConstants::MAX_LCTS_PER_CSC;i++) {
 	allLCTs(bx,mbx,i).clear();
@@ -96,7 +96,7 @@ CSCGEMMotherboardME21::run(const CSCWireDigiCollection* wiredc,
   const bool hasCoPads(!coPads_.empty());
 
   // ALCT centric matching
-  for (int bx_alct = 0; bx_alct < CSCAnodeLCTProcessor::MAX_ALCT_BINS; bx_alct++)
+  for (int bx_alct = 0; bx_alct < CSCConstants::MAX_ALCT_TBINS; bx_alct++)
   {
     if (alct->bestALCT[bx_alct].isValid())
     {
@@ -125,7 +125,7 @@ CSCGEMMotherboardME21::run(const CSCWireDigiCollection* wiredc,
       int nSuccessFulMatches = 0;
       for (int bx_clct = bx_clct_start; bx_clct <= bx_clct_stop; bx_clct++)
       {
-        if (bx_clct < 0 or bx_clct >= CSCCathodeLCTProcessor::MAX_CLCT_BINS) continue;
+        if (bx_clct < 0 or bx_clct >= CSCConstants::MAX_CLCT_TBINS) continue;
         if (drop_used_clcts and used_clct_mask[bx_clct]) continue;
         if (clct->bestCLCT[bx_clct].isValid())
         {
@@ -258,7 +258,7 @@ CSCGEMMotherboardME21::run(const CSCWireDigiCollection* wiredc,
         int nSuccessFulMatches = 0;
         for (int bx_clct = bx_clct_start; bx_clct <= bx_clct_stop; bx_clct++)
           {
-            if (bx_clct < 0 or bx_clct >= CSCCathodeLCTProcessor::MAX_CLCT_BINS) continue;
+            if (bx_clct < 0 or bx_clct >= CSCConstants::MAX_CLCT_TBINS) continue;
             if (drop_used_clcts and used_clct_mask[bx_clct]) continue;
             if (clct->bestCLCT[bx_clct].isValid())
               {
@@ -269,7 +269,7 @@ CSCGEMMotherboardME21::run(const CSCWireDigiCollection* wiredc,
 	     ++nSuccessFulMatches;
 
 	     int mbx = std::abs(clct->bestCLCT[bx_clct].getBX()-bx_alct);
-	     int bx_gem = (coPads[0].second).bx(1)+lct_central_bx;
+	     int bx_gem = (coPads[0].second).bx(1)+CSCConstants::LCT_CENTRAL_BX;
 	     CSCGEMMotherboard::correlateLCTsGEM(clct->bestCLCT[bx_clct], clct->secondCLCT[bx_clct], coPads,
 						 allLCTs(bx_gem,mbx,0), allLCTs(bx_gem,mbx,1), CSCPart::ME21);
 	     if (debug_matching) {
@@ -292,7 +292,7 @@ CSCGEMMotherboardME21::run(const CSCWireDigiCollection* wiredc,
     }
   }
   // reduction of nLCTs per each BX
-  for (int bx = 0; bx < MAX_LCT_BINS; bx++)
+  for (int bx = 0; bx < CSCConstants::MAX_LCT_TBINS; bx++)
     {
       // counting
       unsigned int n=0;
@@ -366,14 +366,28 @@ std::vector<CSCCorrelatedLCTDigi> CSCGEMMotherboardME21::readoutLCTs() const
 }
 
 
-void CSCGEMMotherboardME21::correlateLCTsGEM(CSCALCTDigi& bestALCT, CSCALCTDigi& secondALCT,
-					     CSCCLCTDigi& bestCLCT, CSCCLCTDigi& secondCLCT,
-					     const GEMPadDigiIds& pads, const GEMCoPadDigiIds& copads,
-					     CSCCorrelatedLCTDigi& lct1, CSCCorrelatedLCTDigi& lct2, enum CSCPart p) const
+void CSCGEMMotherboardME21::correlateLCTsGEM(const CSCALCTDigi& bALCT,
+                                             const CSCALCTDigi& sALCT,
+                                             const CSCCLCTDigi& bCLCT,
+                                             const CSCCLCTDigi& sCLCT,
+                                             const GEMPadDigiIds& pads,
+                                             const GEMCoPadDigiIds& copads,
+                                             CSCCorrelatedLCTDigi& lct1,
+                                             CSCCorrelatedLCTDigi& lct2, enum CSCPart p) const
 {
+  CSCALCTDigi bestALCT = bALCT;
+  CSCALCTDigi secondALCT = sALCT;
+  CSCCLCTDigi bestCLCT = bCLCT;
+  CSCCLCTDigi secondCLCT = sCLCT;
+
   // assume that always anodeBestValid and cathodeBestValid
   if (secondALCT == bestALCT) secondALCT.clear();
   if (secondCLCT == bestCLCT) secondCLCT.clear();
+
+  const bool ok_bb = bestALCT.isValid() and bestCLCT.isValid();
+  const bool ok_bs = bestALCT.isValid() and secondCLCT.isValid();
+  const bool ok_sb = secondALCT.isValid() and bestCLCT.isValid();
+  const bool ok_ss = secondALCT.isValid() and secondCLCT.isValid();
 
   if (!copads.empty() or !pads.empty()){
 
@@ -390,15 +404,15 @@ void CSCGEMMotherboardME21::correlateLCTsGEM(CSCALCTDigi& bestALCT, CSCALCTDigi&
     const GEMPadDigi& ss_pad = bestMatchingPad<GEMPadDigi>(secondALCT, secondCLCT, pads, p);
 
     // evaluate possible combinations
-    const bool ok_bb_copad = bestALCT.isValid() and bestCLCT.isValid() and bb_copad.isValid();
-    const bool ok_bs_copad = bestALCT.isValid() and secondCLCT.isValid() and bs_copad.isValid();
-    const bool ok_sb_copad = secondALCT.isValid() and bestCLCT.isValid() and sb_copad.isValid();
-    const bool ok_ss_copad = secondALCT.isValid() and secondCLCT.isValid() and ss_copad.isValid();
+    const bool ok_bb_copad = ok_bb and bb_copad.isValid();
+    const bool ok_bs_copad = ok_bs and bs_copad.isValid();
+    const bool ok_sb_copad = ok_sb and sb_copad.isValid();
+    const bool ok_ss_copad = ok_ss and ss_copad.isValid();
 
-    const bool ok_bb_pad = (not ok_bb_copad) and bestALCT.isValid() and bestCLCT.isValid() and bb_pad.isValid();
-    const bool ok_bs_pad = (not ok_bs_copad) and bestALCT.isValid() and secondCLCT.isValid() and bs_pad.isValid();
-    const bool ok_sb_pad = (not ok_sb_copad) and secondALCT.isValid() and bestCLCT.isValid() and sb_pad.isValid();
-    const bool ok_ss_pad = (not ok_ss_copad) and secondALCT.isValid() and secondCLCT.isValid() and ss_pad.isValid();
+    const bool ok_bb_pad = (not ok_bb_copad) and ok_bb and bb_pad.isValid();
+    const bool ok_bs_pad = (not ok_bs_copad) and ok_bs and bs_pad.isValid();
+    const bool ok_sb_pad = (not ok_sb_copad) and ok_sb and sb_pad.isValid();
+    const bool ok_ss_pad = (not ok_ss_copad) and ok_ss and ss_pad.isValid();
 
     // possible cases with copad
     if (ok_bb_copad or ok_ss_copad){
@@ -424,10 +438,7 @@ void CSCGEMMotherboardME21::correlateLCTsGEM(CSCALCTDigi& bestALCT, CSCALCTDigi&
     }
   } else {
     // run without gems - happens in less than 0.04% of the time
-    lct1 = constructLCTs(bestALCT, bestCLCT, CSCCorrelatedLCTDigi::ALCTCLCT);
-    lct1.setTrknmb(1);
-
-    lct2 = constructLCTs(secondALCT, secondCLCT, CSCCorrelatedLCTDigi::ALCTCLCT);
-    lct2.setTrknmb(2);
+    if (ok_bb) lct1 = constructLCTs(bestALCT, bestCLCT, CSCCorrelatedLCTDigi::ALCTCLCT, 1);
+    if (ok_ss) lct2 = constructLCTs(secondALCT, secondCLCT, CSCCorrelatedLCTDigi::ALCTCLCT, 2);
   }
 }

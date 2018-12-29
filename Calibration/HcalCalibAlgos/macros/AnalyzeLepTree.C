@@ -13,11 +13,16 @@
 //               2 : 0 ignores the information on track momentum
 //                   1 separate plots for certain momentum range 
 //                     (the range depends on ieta)
-//               3 : 0 separate plot for each depth
+//              3-4: 0 separate plot for each depth
 //                   1 sums up all depths
-//              4-5: 0 no check on iphi
+//                   2 collapse depth
+//              5-6: 0 no check on iphi
 //                   1 separate plot for each iphi
 //                   2 separate plot for each RBX
+//                   3 exclude the RBX specified by bits 6-10
+//             7-11:   RBX # to be excluded (maximum 5 bits needed for RBX)
+//               12: 0 varying ranges of p depending on |ieta|
+//                   1 constant p ranges
 //      modeLHC (integer) specifies the detector condition
 //              0      Run1   detector (till 2016)
 //              1      Plan36 detector
@@ -76,7 +81,7 @@ public :
   virtual Int_t         GetEntry(Long64_t entry);
   virtual Long64_t      LoadTree(Long64_t entry);
   virtual void          Init(TTree *tree);
-  virtual void          Loop();
+  virtual void          Loop(Long64_t nmax=-1, bool debug=false);
   virtual Bool_t        Notify();
   virtual void          Show(Long64_t entry = -1);
   void                  writeHisto(std::string outfile);
@@ -91,12 +96,13 @@ private:
   TCanvas*              plotHisto(TH1D* hist);
   void                  plot2DHisto(std::map<unsigned int,TH2D*> hists,
 				    std::vector<TCanvas*>& cvs, bool save);
+  int                   getCollapsedDepth(int eta, int phi, int depth);
   int                   getRBX(int eta);
   int                   getPBin(int eta);
   int                   getVxBin();
   int                   getDepthBin(int depth);
   int                   getPhiBin(int eta);
-  int                   nDepthBins(int eta, int phi);
+  int                   nDepthBins(int eta, int phi, int modeLHC);
   int                   nPhiBins(int eta);
   int                   nPBins(int eta);
   int                   nVxBins();
@@ -104,6 +110,9 @@ private:
 			       int nvx, int ipbin);
   void                  unpackID(unsigned int id, int& zside, int& eta, 
 				 int& phi, int& depth, int& nvx, int& ipbin);
+  void                  getBins(int type, int eta, int phi, int depth,
+				int& nbins, double& xmax);
+
 private:
   TTree                *fChain;   //!pointer to the analyzed TTree or TChain
   Int_t                 fCurrent; //!current Tree number in a TChain
@@ -130,9 +139,11 @@ private:
   TBranch              *b_t_actln;     //!
   TBranch              *b_t_depth;     //!
 
-  int                   mode_, modeLHC_;
-  std::vector<int>      npvbin_, iprange_;
-  std::vector<double>   prange_[5];
+  static const int              etamax_=26, npbin_=9, nvbin_=6;
+  static const bool             debug_=false;
+  int                           mode_, modeLHC_, exRBX_, kphi_, kdepth_;
+  std::vector<int>              npvbin_, iprange_;
+  std::vector<double>           prange_[5];
   std::map<unsigned int, TH1D*> h_p_, h_nv_;
   std::map<unsigned int, TH2D*> h_pnv_;
   std::map<unsigned int, TH1D*> h_p2_, h_nv2_;
@@ -186,6 +197,36 @@ void AnalyzeLepTree::Init(TTree *tree) {
   // Init() will be called many times when running on PROOF
   // (once per file to be processed).
 
+  exRBX_   = (mode_/128)%32;
+  kphi_    = (mode_/32)%4;
+  kdepth_  = (mode_/8)%4;
+  if ((mode_%2) == 0) std::cout << "Produce set of histograms of energy, "
+				<< " active length, active length corrected "
+				<< "energy for 3 types" << std::endl;  
+  else                std::cout << "Produce plots of p, nvx and scatter plots "
+				<< "for each ieta" << std::endl;
+  if (((mode_/2)%2) == 0) std::cout << "Ignore the information on number of "
+				    << "vertex iformation" << std::endl;
+  else                    std::cout << "Group ranges of # of vertex "
+				    << "0:15:20:25:30:100" << std::endl;
+  if (((mode_/4)%2) == 0) std::cout << "Ignore the information on track "
+				    << "momentum" << std::endl;
+  else                    std::cout << "Separate plots for certain momentum "
+				    << "range (the range depends on ieta)\n";
+  if       (kdepth_ == 0) std::cout << "Generate separate plot for each depth"
+				    << std::endl;
+  else if  (kdepth_ == 1) std::cout << "Sums up all depths for plots\n";
+  else                    std::cout << "Collapse depths to Run 1 scenario\n";
+  if      (kphi_ == 0) std::cout << "Make no check on iphi" << std::endl;
+  else if (kphi_ == 1) std::cout << "Make separate plot for each iphi\n";
+  else if (kphi_ == 2) std::cout << "Make separate plot for each RBX\n";
+  else                 std::cout << "Exclude the RBX " << exRBX_ << std::endl;
+  if      (modeLHC_ == 0) std::cout << "This is Run1 detector (till 2016)\n";
+  else if (modeLHC_ == 1) std::cout << "This is Plan36 detector (2018)\n";
+  else if (modeLHC_ == 2) std::cout << "This is Phase1 detector (after 2020)\n";
+  else if (modeLHC_ == 3) std::cout << "This is Plan1  detector (2017)\n";
+  else                    std::cout << "This is Phase2 detector (after 2024)\n";
+
   // Set object pointer
   t_ene    = 0;
   t_enec   = 0;
@@ -235,7 +276,7 @@ Int_t AnalyzeLepTree::Cut(Long64_t ) {
   return 1;
 }
 
-void AnalyzeLepTree::Loop() {
+void AnalyzeLepTree::Loop(Long64_t nmax, bool debug) {
   //   In a ROOT session, you can do:
   //      Root > .L AnalyzeLepTree.C
   //      Root > AnalyzeLepTree t
@@ -262,10 +303,15 @@ void AnalyzeLepTree::Loop() {
   if (fChain == 0) return;
 
   Long64_t nentries = fChain->GetEntriesFast();
+  std::cout << "Number of entries: " << nentries << ":" << nmax << std::endl;
+  if (nmax > 0 && nmax < nentries) nentries = nmax;
+  const double ethr = 0.00001;        // Threshold of 10 keV
 
   Long64_t nbytes = 0, nb = 0;
   for (Long64_t jentry=0; jentry<nentries; jentry++) {
     Long64_t ientry = LoadTree(jentry);
+    if ((jentry%1000000 == 0) || debug) 
+      std::cout << "Entry " << jentry << ":" << ientry << std::endl;
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     // if (Cut(ientry) < 0) continue;
@@ -289,15 +335,56 @@ void AnalyzeLepTree::Loop() {
       std::map<unsigned int,TH1D*>::iterator it5 = h_nv2_.find(id2);
       if (it5 != h_nv2_.end()) (it5->second)->Fill(t_nvtx);
     } else {
-      if ((mode_/8)%2 == 0) {
-	for (unsigned int k=0; k<t_depth->size(); ++k) {
-	  int depth       = (*t_depth)[k];
-	  unsigned int id = packID(zside,eta,phi,depth+1,vbin,pbin);
-	  double ene      = (*t_ene)[k];
-	  double enec     = (*t_enec)[k];
-	  double charge   = (*t_charge)[k];
-	  double actl     = (*t_actln)[k];
-	  if (ene > 0 && actl > 0 && charge > 0) {
+      if (phi > 0 && pbin >= 0 && vbin >= 0) {
+	if (kdepth_ == 0) {
+	  for (unsigned int k=0; k<t_depth->size(); ++k) {
+	    int depth       = (*t_depth)[k];
+	    unsigned int id = packID(zside,eta,phi,depth+1,vbin,pbin);
+	    double ene      = (*t_ene)[k];
+	    double enec     = (*t_enec)[k];
+	    double charge   = (*t_charge)[k];
+	    double actl     = (*t_actln)[k];
+	    if (ene > ethr && actl > 0 && charge > 0) {
+	      std::map<unsigned int,TH1D*>::iterator it1 = h_Energy_.find(id);
+	      if (it1 != h_Energy_.end())  (it1->second)->Fill(ene);
+	      std::map<unsigned int,TH1D*>::iterator it2 = h_Ecorr_.find(id);
+	      if (it2 != h_Ecorr_.end())   (it2->second)->Fill(ene/actl);
+	      std::map<unsigned int,TH1D*>::iterator it3 = h_EnergyC_.find(id);
+	      if (it3 != h_EnergyC_.end()) (it3->second)->Fill(enec);
+	      std::map<unsigned int,TH1D*>::iterator it4 = h_EcorrC_.find(id);
+	      if (it4 != h_EcorrC_.end())  (it4->second)->Fill(enec/actl);
+	      std::map<unsigned int,TH1D*>::iterator it5 = h_Charge_.find(id);
+	      if (it5 != h_Charge_.end())  (it5->second)->Fill(charge);
+	      std::map<unsigned int,TH1D*>::iterator it6 = h_Chcorr_.find(id);
+	      if (it6 != h_Chcorr_.end())  (it6->second)->Fill(charge/actl);
+	      if (debug_) {
+//		if ((eta>20 && (t_iphi > 35)) || (t_iphi > 71)) std::cout << zside << ":" << eta << ":" << phi << ":" << t_iphi << ":" << depth+1 << ":" << vbin << ":" << pbin << " ID " << std::hex << id << std::dec << " Flags " <<  (it1 != h_Energy_.end()) << ":" << (it2 != h_Ecorr_.end()) << ":" <<  (it3 != h_EnergyC_.end()) << ":" << (it4 != h_EcorrC_.end()) << ":" << (it5 != h_Charge_.end()) << ":" << (it6 != h_Chcorr_.end()) << " E " << ene << " C " << charge << " L " << actl << std::endl;
+		if ((it1 == h_Energy_.end()) || (it2 == h_Ecorr_.end()) || 
+		    (it3 == h_EnergyC_.end()) || (it4 == h_EcorrC_.end()) || 
+		    (it5 == h_Charge_.end()) || (it6 == h_Chcorr_.end())) 
+		  std::cout << zside << ":" << eta << ":" << phi << ":" 
+			    << t_iphi << ":" << depth+1 << ":" << vbin << ":" 
+			    << pbin << " ID " << std::hex << id << std::dec 
+			    << " Flags " <<  (it1 != h_Energy_.end()) << ":" 
+			    << (it2 != h_Ecorr_.end()) << ":" 
+			    << (it3 != h_Charge_.end()) << ":" 
+			    << (it4 != h_Chcorr_.end()) << " E " << ene 
+			    << " C " << charge << " L " << actl << std::endl;
+	      }
+	    }
+	  }
+	} else if (kdepth_ == 1) {
+	  double ene(0), enec(0), actl(0), charge(0);
+	  unsigned int id = packID(zside,eta,phi,1,vbin,pbin);
+	  for (unsigned int k=0; k<t_depth->size(); ++k) {
+	    if ((*t_ene)[k] > 0 && (*t_actln)[k] > 0) {
+	      ene    += (*t_ene)[k];
+	      enec   += (*t_enec)[k];
+	      charge += (*t_charge)[k];
+	      actl   += (*t_actln)[k];
+	    }
+	  }
+	  if (ene > ethr && actl > 0 && charge > 0) {
 	    std::map<unsigned int,TH1D*>::iterator it1 = h_Energy_.find(id);
 	    if (it1 != h_Energy_.end())  (it1->second)->Fill(ene);
 	    std::map<unsigned int,TH1D*>::iterator it2 = h_Ecorr_.find(id);
@@ -310,35 +397,40 @@ void AnalyzeLepTree::Loop() {
 	    if (it5 != h_Charge_.end())  (it5->second)->Fill(charge);
 	    std::map<unsigned int,TH1D*>::iterator it6 = h_Chcorr_.find(id);
 	    if (it6 != h_Chcorr_.end())  (it6->second)->Fill(charge/actl);
-	    /*
-	    if ((eta>20 && (t_iphi > 35)) || (t_iphi > 71)) std::cout << zside << ":" << eta << ":" << phi << ":" << t_iphi << ":" << depth+1 << ":" << vbin << ":" << pbin << " ID " << std::hex << id << std::dec << " Flags " <<  (it1 != h_Energy_.end()) << ":" << (it2 != h_Ecorr_.end()) << ":" <<  (it3 != h_EnergyC_.end()) << ":" << (it4 != h_EcorrC_.end()) << ":" << (it5 != h_Charge_.end()) << ":" << (it6 != h_Chcorr_.end()) << " E " << ene << " C " << charge << " L " << actl << std::endl;
-	    if ((it1 == h_Energy_.end()) || (it2 == h_Ecorr_.end()) || (it3 == h_EnergyC_.end()) || (it4 == h_EcorrC_.end()) || (it5 == h_Charge_.end()) || (it6 == h_Chcorr_.end())) std::cout << zside << ":" << eta << ":" << phi << ":" << t_iphi << ":" << depth+1 << ":" << vbin << ":" << pbin << " ID " << std::hex << id << std::dec << " Flags " <<  (it1 != h_Energy_.end()) << ":" << (it2 != h_Ecorr_.end()) << ":" << (it3 != h_Charge_.end()) << ":" << (it4 != h_Chcorr_.end()) << " E " << ene << " C " << charge << " L " << actl << std::endl;
-	    */
+	  }
+	} else {
+	  double ene[3], enec[3], actl[3], charge[3];
+	  for (unsigned int k=0; k<3; ++k) {
+	    ene[k] = enec[k] = actl[k] = charge[k] = 0;
+	  }
+	  for (unsigned int k=0; k<t_depth->size(); ++k) {
+	    if ((*t_ene)[k] > 0 && (*t_actln)[k] > 0) {
+	      int dep   = (*t_depth)[k];
+	      int depth = getCollapsedDepth(zside*eta, phi, dep) - 1;
+	      ene[depth]    += (*t_ene)[k];
+	      enec[depth]   += (*t_enec)[k];
+	      charge[depth] += (*t_charge)[k];
+	      actl[depth]   += (*t_actln)[k];
+	    }
+	  }
+	  for (int k=0; k<nDepthBins(eta,phi,0); ++k) {
+	    if (ene[k] > ethr && actl[k] > 0 && charge[k] > 0) {
+	      unsigned int id = packID(zside,eta,phi,k+1,vbin,pbin);
+	      std::map<unsigned int,TH1D*>::iterator it1 = h_Energy_.find(id);
+	      if (it1 != h_Energy_.end())  (it1->second)->Fill(ene[k]);
+	      std::map<unsigned int,TH1D*>::iterator it2 = h_Ecorr_.find(id);
+	      if (it2 != h_Ecorr_.end())   (it2->second)->Fill(ene[k]/actl[k]);
+	      std::map<unsigned int,TH1D*>::iterator it3 = h_EnergyC_.find(id);
+	      if (it3 != h_EnergyC_.end()) (it3->second)->Fill(enec[k]);
+	      std::map<unsigned int,TH1D*>::iterator it4 = h_EcorrC_.find(id);
+	      if (it4 != h_EcorrC_.end())  (it4->second)->Fill(enec[k]/actl[k]);
+	      std::map<unsigned int,TH1D*>::iterator it5 = h_Charge_.find(id);
+	      if (it5 != h_Charge_.end())  (it5->second)->Fill(charge[k]);
+	      std::map<unsigned int,TH1D*>::iterator it6 = h_Chcorr_.find(id);
+	      if (it6 != h_Chcorr_.end())  (it6->second)->Fill(charge[k]/actl[k]);
+	    }
 	  }
 	}
-      } else {
-	double ene(0), enec(0), actl(0), charge(0);
-	unsigned int id = packID(zside,eta,phi,1,vbin,pbin);
-	for (unsigned int k=0; k<t_depth->size(); ++k) {
-	  if ((*t_ene)[k] > 0 && (*t_actln)[k] > 0) {
-	    ene    += (*t_ene)[k];
-	    enec   += (*t_enec)[k];
-	    charge += (*t_charge)[k];
-	    actl   += (*t_actln)[k];
-	  }
-	}
-	std::map<unsigned int,TH1D*>::iterator it1 = h_Energy_.find(id);
-	if (it1 != h_Energy_.end())  (it1->second)->Fill(ene);
-	std::map<unsigned int,TH1D*>::iterator it2 = h_Ecorr_.find(id);
-	if (it2 != h_Ecorr_.end())   (it2->second)->Fill(ene/actl);
-	std::map<unsigned int,TH1D*>::iterator it3 = h_EnergyC_.find(id);
-	if (it3 != h_EnergyC_.end()) (it3->second)->Fill(ene);
-	std::map<unsigned int,TH1D*>::iterator it4 = h_Ecorr_.find(id);
-	if (it4 != h_EcorrC_.end())  (it4->second)->Fill(ene/actl);
-	std::map<unsigned int,TH1D*>::iterator it5 = h_Charge_.find(id);
-	if (it5 != h_Charge_.end())  (it5->second)->Fill(charge);
-	std::map<unsigned int,TH1D*>::iterator it6 = h_Chcorr_.find(id);
-	if (it6 != h_Chcorr_.end())  (it6->second)->Fill(charge/actl);
       }
     }
   }
@@ -346,29 +438,55 @@ void AnalyzeLepTree::Loop() {
 
 void AnalyzeLepTree::bookHisto() {
 
-  int npvbin[6] = {0, 15, 20, 25, 30, 100};
+  int npvbin[nvbin_] = {0, 15, 20, 25, 30, 100};
   npvbin_.clear();
   for (int i=0; i<5; ++i) prange_[i].clear();
-  for (int i=0; i<6; ++i) npvbin_.push_back(npvbin[i]);
+  for (int i=0; i<nvbin_; ++i) npvbin_.push_back(npvbin[i]);
   int ipbrng[30]= {0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,2,3,3,3,4,4,4,4};
   for (int i=0; i<30; ++i) iprange_.push_back(ipbrng[i]);
-  double prange0[7] = {0,30,45,55,75,100,500};
-  double prange1[7] = {0,50,75,100,125,150,500};
-  double prange2[7] = {0,60,75,100,125,150,500};
-  double prange3[7] = {0,100,125,150,175,200,500};
-  double prange4[7] = {0,125,150,175,200,250,500};
-  for (int i=0; i<7; ++i) {
-    prange_[0].push_back(prange0[i]);
-    prange_[1].push_back(prange1[i]);
-    prange_[2].push_back(prange2[i]);
-    prange_[3].push_back(prange3[i]);
-    prange_[4].push_back(prange4[i]);
+  double prange0[npbin_] = {0,30,45,55,75,100,125,150,500};
+  double prange1[npbin_] = {0,50,75,100,125,150,200,300,500};
+  double prange2[npbin_] = {0,60,75,100,125,150,200,300,500};
+  double prange3[npbin_] = {0,100,125,150,175,200,300,400,500};
+  double prange4[npbin_] = {0,125,150,175,200,250,300,400,500};
+  double prangeX[npbin_] = {125,150,200,250,300,350,400,500};
+  for (int i=0; i<npbin_; ++i) {
+    if ((mode_/4096)%2 == 0) {
+      prange_[0].push_back(prange0[i]);
+      prange_[1].push_back(prange1[i]);
+      prange_[2].push_back(prange2[i]);
+      prange_[3].push_back(prange3[i]);
+      prange_[4].push_back(prange4[i]);
+    } else {
+      prange_[0].push_back(prangeX[i]);
+      prange_[1].push_back(prangeX[i]);
+      prange_[2].push_back(prangeX[i]);
+      prange_[3].push_back(prangeX[i]);
+      prange_[4].push_back(prangeX[i]);
+    }
+  }
+  if (debug_) {
+    std::cout << "Eta range " << -etamax_ << ":" << etamax_ << " # of vtx bins "
+	      << nVxBins() << std::endl;
+    if ((mode_/1)%2 == 0) {
+      for (int ieta=-etamax_; ieta<=etamax_; ++ieta) {
+	int eta   = (ieta>0) ? ieta : -ieta;
+	if (eta != 0) {
+	  int ndepth = ((kdepth_ == 0) ? nDepthBins(eta, 63, modeLHC_) : 
+			(kdepth_ == 1) ? 1 : nDepthBins(eta, 63, 0));
+	  std::cout << "Eta " << ieta << " with " << nPhiBins(eta) 
+		    << " phi bins " << ndepth << " maximum depths and " 
+		    << nPBins(eta) << " p bins" << std::endl;
+	}
+      }
+    }
   }
 
   char name[100], title[200];
+  unsigned int book1(0), book2(0);
   if ((mode_/1)%2 == 1) {
     h_p_.clear(); h_nv_.clear(); h_pnv_.clear(); h_nv2_.clear(); h_p2_.clear();
-    for (int ieta=-26; ieta<=26; ++ieta) {
+    for (int ieta=-etamax_; ieta<=etamax_; ++ieta) {
       if (ieta != 0) {
 	int zside = (ieta>0) ? 1 : -1;
 	int eta   = (ieta>0) ? ieta : -ieta;
@@ -376,15 +494,19 @@ void AnalyzeLepTree::bookHisto() {
 	sprintf(name, "peta%d", ieta);
 	sprintf(title,"Momentum for i#eta = %d (GeV)", ieta);
 	h_p_[id0] = new TH1D(name, title, 100, 0.0, 500.0);
+	++book1;
 	sprintf(name, "nveta%d", ieta);
 	sprintf(title,"Number of Vertex for i#eta = %d", ieta);
 	h_nv_[id0] = new TH1D(name, title, 100, 0.0, 100.0);
+	++book1;
 	sprintf(name, "pnveta%d", ieta);
 	sprintf(title,"i#eta = %d", ieta);
 	TH2D* h2 = new TH2D(name, title, 100, 0.0, 100.0, 100, 0.0, 500.0);
+	++book2;
 	h2->GetXaxis()->SetTitle("Number of Vertex");
 	h2->GetYaxis()->SetTitle("Momentum (GeV)");
 	h_pnv_[id0] = h2;
+	++book1;
 	char etas[10];
 	sprintf (etas, "i#eta=%d", ieta);
 	char name[100], title[200];
@@ -400,6 +522,7 @@ void AnalyzeLepTree::bookHisto() {
 	  sprintf (title,"Momentum for %s %s", etas, ps);
 	  h_p2_[id] = new TH1D(name,title,100,0.0,500.0);
 	  h_p2_[id]->Sumw2();
+	  ++book1;
 	}
 	for (int vbin=0; vbin<nVxBins(); ++vbin) {
 	  char vtx[12];
@@ -410,13 +533,14 @@ void AnalyzeLepTree::bookHisto() {
 	  sprintf (title,"Number of vertex for %s %s", etas, vtx);
 	  h_nv2_[id] = new TH1D(name,title,100,0.0,100.0);
 	  h_nv2_[id]->Sumw2();
+	  ++book1;
 	}
       }
     }
   } else {
     h_Energy_.clear(); h_Ecorr_.clear(); h_Charge_.clear(); h_Chcorr_.clear();
     h_EnergyC_.clear(); h_EcorrC_.clear();
-    for (int ieta=-26; ieta<=26; ++ieta) {
+    for (int ieta=-etamax_; ieta<=etamax_; ++ieta) {
       if (ieta != 0) {
 	int zside = (ieta>0) ? 1 : -1;
 	int eta   = (ieta>0) ? ieta : -ieta;
@@ -424,21 +548,25 @@ void AnalyzeLepTree::bookHisto() {
 	sprintf (etas, "i#eta=%d", ieta);
 	for (int iphi=0; iphi<nPhiBins(eta); ++iphi) {
 	  char phis[20];
-	  int phi(1), phi0(1);
-	  if ((mode_/16)%4 == 1) {
+	  int phi(1), phi0(63);
+	  if (kphi_ == 1) {
 	    phi0 = phi = (eta <= 20) ? iphi+1 : 2*iphi+1;
 	    sprintf (phis, "i#phi=%d", phi);
-	  } else if ((mode_/16)%4 == 2) {
+	  } else if (kphi_ == 2) {
 	    phi0 = 4*iphi + 1;
 	    phi  = iphi + 1;
 	    sprintf (phis, "RBX=%d", iphi+1);
+	  } else if (kphi_ == 3) {
+	    sprintf (phis, "All except RBX %d", exRBX_);
 	  } else {
 	    sprintf (phis, "All i#phi");
 	  }
-	  int ndepth = ((mode_/8)%2 == 0) ? nDepthBins(eta, phi0) : 1;
+	  int ndepth = ((kdepth_ == 0) ? nDepthBins(eta, phi0, modeLHC_) : 
+			(kdepth_ == 1) ? 1 : nDepthBins(eta, phi0, 0));
 	  for (int depth=0; depth<ndepth; ++depth) {
 	    char deps[20];
-	    if ((mode_/8)%2 == 0) sprintf (deps, "Depth=%d", depth+1);
+	    if (kdepth_ == 1) sprintf (deps, "all depths");
+	    else              sprintf (deps, "Depth=%d", depth+1);
 	    for (int pbin=0; pbin<nPBins(eta); ++pbin) {
 	      char ps[30];
 	      if ((mode_/4)%2 == 1) {
@@ -449,6 +577,8 @@ void AnalyzeLepTree::bookHisto() {
 		sprintf (ps, "all p");
 	      };
 	      for (int vbin=0; vbin<nVxBins(); ++vbin) {
+		int    nbin(4000);
+		double xmax(10.0);
 		char vtx[20];
 		if ((mode_/2)%2 == 1) {
 		  sprintf(vtx, "N_{vtx}=%d:%d", npvbin[vbin], npvbin[vbin+1]);
@@ -457,30 +587,36 @@ void AnalyzeLepTree::bookHisto() {
 		}
 		unsigned int id = packID(zside,eta,phi,depth+1,vbin,pbin);
 		char name[100], title[200];
-		sprintf (name,"EdepE%dF%dD%dV%dP%d",ieta,phi,depth,vbin,pbin);
+		sprintf (name,"EdepE%dF%dD%dV%dP%d",ieta,phi,deps,vbin,pbin);
 		sprintf (title,"Deposited energy for %s %s %s %s %s (GeV)", etas, phis, deps, ps, vtx);
-		h_Energy_[id] = new TH1D(name,title,4000,0.0,10.0);
-		h_Energy_[id]->Sumw2();
-		sprintf (name,"EcorE%dF%dD%dV%dP%d",ieta,phi,depth,vbin,pbin);
+		getBins(0, ieta, phi0, depth+1, nbin, xmax);
+		h_Energy_[id] = new TH1D(name,title,nbin,0.0,xmax);
+		++book1;
+		sprintf (name,"EcorE%dF%dD%dV%dP%d",ieta,phi,deps,vbin,pbin);
 		sprintf (title,"Active length corrected energy for %s %s %s %s %s (GeV/cm)", etas, phis, deps, ps, vtx);
-		h_Ecorr_[id] = new TH1D(name,title,4000,0.0,10.0);
-		h_Ecorr_[id]->Sumw2();
-		sprintf (name,"EdepCE%dF%dD%dV%dP%d",ieta,phi,depth,vbin,pbin);
+		getBins(1, ieta, phi0, depth+1, nbin, xmax);
+		h_Ecorr_[id] = new TH1D(name,title,nbin,0.0,xmax);
+		++book1;
+		sprintf (name,"EdepCE%dF%dD%dV%dP%d",ieta,phi,deps,vbin,pbin);
 		sprintf (title,"Response Corrected deposited energy for %s %s %s %s %s (GeV)", etas, phis, deps, ps, vtx);
-		h_EnergyC_[id] = new TH1D(name,title,4000,0.0,10.0);
-		h_EnergyC_[id]->Sumw2();
-		sprintf (name,"EcorCE%dF%dD%dV%dP%d",ieta,phi,depth,vbin,pbin);
+		getBins(2, ieta, phi0, depth+1, nbin, xmax);
+		h_EnergyC_[id] = new TH1D(name,title,nbin,0.0,xmax);
+		++book1;
+		sprintf (name,"EcorCE%dF%dD%dV%dP%d",ieta,phi,deps,vbin,pbin);
 		sprintf (title,"Response and active length corrected energy for %s %s %s %s %s (GeV/cm)", etas, phis, deps, ps, vtx);
-		h_EcorrC_[id] = new TH1D(name,title,4000,0.0,10.0);
-		h_EcorrC_[id]->Sumw2();
-		sprintf (name,"ChrgE%dF%dD%dV%dP%d",ieta,phi,depth,vbin,pbin);
+		getBins(3, ieta, phi0, depth+1, nbin, xmax);
+		h_EcorrC_[id] = new TH1D(name,title,nbin,0.0,xmax);
+		++book1;
+		sprintf (name,"ChrgE%dF%dD%dV%dP%d",ieta,phi,deps,vbin,pbin);
 		sprintf (title,"Measured charge for %s %s %s %s %s (cm)", etas, phis, deps, ps, vtx);
-		h_Charge_[id] = new TH1D(name,title,20,0.0,20.0);
-		h_Charge_[id]->Sumw2();
-		sprintf (name,"ChcorE%dF%dD%dV%dP%d",ieta,phi,depth,vbin,pbin);
+		getBins(4, ieta, phi0, depth+1, nbin, xmax);
+		h_Charge_[id] = new TH1D(name,title,nbin,0.0,xmax);
+		++book1;
+		sprintf (name,"ChcorE%dF%dD%dV%dP%d",ieta,phi,deps,vbin,pbin);
 		sprintf (title,"Active length corrected charge for %s %s %s %s %s (cm)", etas, phis, deps, ps, vtx);
-		h_Chcorr_[id] = new TH1D(name,title,20,0.0,20.0);
-		h_Chcorr_[id]->Sumw2();
+		getBins(5, ieta, phi0, depth+1, nbin, xmax);
+		h_Chcorr_[id] = new TH1D(name,title,nbin,0.0,xmax);
+		++book1;
 	      }
 	    }
 	  }
@@ -488,6 +624,7 @@ void AnalyzeLepTree::bookHisto() {
       }
     }
   }
+  std::cout << "Booked " << book1 << " 1D and " << book2 << " 2D Histos\n";
 }
 
 void AnalyzeLepTree::writeHisto(std::string fname) {
@@ -506,7 +643,7 @@ void AnalyzeLepTree::writeHisto(std::string fname) {
     for (std::map<unsigned int,TH1D*>::const_iterator itr = h_nv2_.begin(); 
 	 itr != h_nv2_.end(); ++itr) (itr->second)->Write();
   } else {
-    for (int ieta=-26; ieta<=26; ++ieta) {
+    for (int ieta=-etamax_; ieta<=etamax_; ++ieta) {
       if (ieta != 0) {
 	char dirname[50];
 	sprintf (dirname, "DieMuonEta%d", ieta);
@@ -516,13 +653,14 @@ void AnalyzeLepTree::writeHisto(std::string fname) {
 	int eta   = (ieta>0) ? ieta : -ieta;
 	for (int iphi=0; iphi<nPhiBins(eta); ++iphi) {
 	  int phi(1), phi0(1);
-	  if ((mode_/16)%4 == 1) {
+	  if (kphi_ == 1) {
 	    phi0 = phi = (eta <= 20) ? iphi+1 : 2*iphi+1;
-	  } else if ((mode_/16)%4 == 2) {
+	  } else if (kphi_ == 2) {
 	    phi0 = 4*iphi + 1;
 	    phi  = iphi + 1;
 	  };
-	  int ndepth = ((mode_/8)%2 == 0) ? nDepthBins(eta, phi0) : 1;
+	  int ndepth = ((kdepth_ == 0) ? nDepthBins(eta, phi0, modeLHC_) : 
+			(kdepth_ == 1) ? 1 : nDepthBins(eta, phi0, 0));
 	  for (int depth=0; depth<ndepth; ++depth) {
 	    for (int pbin=0; pbin<nPBins(eta); ++pbin) {
 	      for (int vbin=0; vbin<nVxBins(); ++vbin) {
@@ -685,6 +823,44 @@ void AnalyzeLepTree::plot2DHisto(std::map<unsigned int,TH2D*> hists,
   } 
 }
 
+int AnalyzeLepTree::getCollapsedDepth(int eta, int phi, int dep) {
+  int depth = dep+1;
+  if (std::abs(eta) <= 14 || std::abs(eta) == 17) {
+    depth = 1;
+  } else if (std::abs(eta) == 15) {
+    if (modeLHC_ > 3) {
+      if (dep > 3) depth = 2;
+      else         depth = 1;
+    }
+  } else if (std::abs(eta) == 16) {
+    if (modeLHC_ == 0 || (modeLHC_ == 3 && (phi < 63 || phi > 66 || eta < 0))) {
+    } else {
+      if      (dep == 3) depth = 2;
+      else if (dep == 4) depth = 3;
+    }
+  } else if (std::abs(eta) < 26) {
+    if (modeLHC_ == 0 || (modeLHC_ == 3 && (phi < 63 || phi > 66 || eta < 0))) {
+    } else {
+      if      (dep < 3)  depth = 1;
+      else               depth = 2;
+    }
+  } else if (std::abs(eta) == 26) {
+    if (modeLHC_ == 0 || (modeLHC_ == 3 && (phi < 63 || phi > 66 || eta < 0))) {
+    } else {
+      if      (dep < 4)  depth = 1;
+      else               depth = 2;
+    }
+  } else {
+    if (modeLHC_ == 0 || (modeLHC_ == 3 && (phi < 63 || phi > 66 || eta < 0))) {
+    } else {
+      if      (dep < 3)  depth = 1;
+      else if (dep == 3) depth = 2;
+      else               depth = 3;
+    }
+  }
+  return depth;
+}
+
 int AnalyzeLepTree::getRBX(int eta) {
   int rbx(1);
   int phi = (eta > 20) ? (2*t_iphi + 1) : (t_iphi + 1);
@@ -716,21 +892,23 @@ int AnalyzeLepTree::getVxBin() {
 }
 
 int AnalyzeLepTree::getDepthBin(int depth) {
-  int bin = ((mode_/8)%2 == 0) ? depth : 1;
+  int bin = (kdepth_ == 0) ? depth : 1;
   return bin;
 }
 
 int AnalyzeLepTree::getPhiBin(int eta) {
   int bin(1);
-  if ((mode_/16)%4 == 1) {
+  if (kphi_ == 1) {
     bin = (eta > 20) ? (2*t_iphi + 1) : (t_iphi + 1);
-  } else if ((mode_/16)%4 == 2) {
+  } else if (kphi_ == 2) {
     bin = getRBX(eta);
+  } else if (kphi_ == 3) {
+    if (exRBX_ == getRBX(eta)) bin = -1;
   }
   return bin;
 }
     
-int AnalyzeLepTree::nDepthBins(int eta, int phi) {
+int AnalyzeLepTree::nDepthBins(int eta, int phi, int modeLHC) {
   // Run 1 scenario
   int  nDepthR1[29]={1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,3,1,2,2,2,2,2,2,2,2,2,3,3,2};
   // Run 2 scenario from 2018
@@ -745,13 +923,13 @@ int AnalyzeLepTree::nDepthBins(int eta, int phi) {
   //         = 3 -->      corresponds to 2017  (Plan 1)
   //         = 4 -->      corresponds to Run4  (post LS3)
   int  nbin(0);
-  if (modeLHC_ == 0) {
+  if (modeLHC == 0) {
     nbin = nDepthR1[eta-1];
-  } else if (modeLHC_ == 1) {
+  } else if (modeLHC == 1) {
     nbin = nDepthR2[eta-1];
-  } else if (modeLHC_ == 2) {
+  } else if (modeLHC == 2) {
     nbin = nDepthR3[eta-1];
-  } else if (modeLHC_ == 3) {
+  } else if (modeLHC == 3) {
     if (phi > 0) {
       if (eta >= 16 && phi >= 63 && phi <= 66) {
 	nbin = nDepthR2[eta-1];
@@ -778,8 +956,9 @@ int AnalyzeLepTree::nDepthBins(int eta, int phi) {
 int AnalyzeLepTree::nPhiBins(int eta) {
   int nphi = (eta <= 20) ? 72 : 36;
   if (modeLHC_ == 4 && eta > 16) nphi = 360;
-  if      ((mode_/16)%4 == 0)    nphi = 1;
-  else if ((mode_/16)%4 == 2)    nphi = 18;
+  if      (kphi_ == 0)    nphi = 1;
+  else if (kphi_ == 2)    nphi = 18;
+  else if (kphi_ == 3)    nphi = 1;
   return nphi;
 }
 
@@ -813,4 +992,23 @@ void AnalyzeLepTree::unpackID(unsigned int id, int& zside, int& eta, int& phi,
   depth = (id >> 13) & 7;
   ipbin = (id >> 16) & 7;
   nvx   = (id >> 19) & 7;
+}
+
+void AnalyzeLepTree::getBins(int type, int ieta, int phi, int depth, int& nbin,
+			     double& xmax) {
+  int    eta    = (ieta >= 0) ? ieta : -ieta;
+  bool   barrel = (eta < 16) || ((eta == 16) && (depth <= 2));
+  bool   rbx17  = (phi >= 63) && (phi <= 66) && (ieta >= 16) && (!barrel);
+  nbin = 5000;
+  xmax = 10.0;
+  if (type >= 4) {
+    if ((modeLHC_ == 0) || (((modeLHC_ == 1) || (modeLHC_ == 3)) && barrel) ||
+	((modeLHC_ == 3) && (!rbx17))) {
+      // HPD Channels
+      xmax = 50.0;
+    } else {
+      // SiPM Channels
+      xmax = 5000.0;
+    }
+  }
 }

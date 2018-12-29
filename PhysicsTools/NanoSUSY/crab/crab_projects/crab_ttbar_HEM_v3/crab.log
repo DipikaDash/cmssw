@@ -1,0 +1,222 @@
+Updating process to run DeepBoostedJet on datasets before 103X
+Will recalculate the following discriminators on AK8 jets: pfDeepBoostedJetTags:probTbcq, pfDeepBoostedJetTags:probTbqq, pfDeepBoostedJetTags:probTbc, pfDeepBoostedJetTags:probTbq, pfDeepBoostedJetTags:probWcq, pfDeepBoostedJetTags:probWqq, pfDeepBoostedJetTags:probZbb, pfDeepBoostedJetTags:probZcc, pfDeepBoostedJetTags:probZqq, pfDeepBoostedJetTags:probHbb, pfDeepBoostedJetTags:probHcc, pfDeepBoostedJetTags:probHqqqq, pfDeepBoostedJetTags:probQCDbb, pfDeepBoostedJetTags:probQCDcc, pfDeepBoostedJetTags:probQCDb, pfDeepBoostedJetTags:probQCDc, pfDeepBoostedJetTags:probQCDothers, pfDeepBoostedDiscriminatorsJetTags:TvsQCD, pfDeepBoostedDiscriminatorsJetTags:WvsQCD, pfDeepBoostedDiscriminatorsJetTags:ZvsQCD, pfDeepBoostedDiscriminatorsJetTags:ZbbvsQCD, pfDeepBoostedDiscriminatorsJetTags:HbbvsQCD, pfDeepBoostedDiscriminatorsJetTags:H4qvsQCD, pfMassDecorrelatedDeepBoostedJetTags:probTbcq, pfMassDecorrelatedDeepBoostedJetTags:probTbqq, pfMassDecorrelatedDeepBoostedJetTags:probTbc, pfMassDecorrelatedDeepBoostedJetTags:probTbq, pfMassDecorrelatedDeepBoostedJetTags:probWcq, pfMassDecorrelatedDeepBoostedJetTags:probWqq, pfMassDecorrelatedDeepBoostedJetTags:probZbb, pfMassDecorrelatedDeepBoostedJetTags:probZcc, pfMassDecorrelatedDeepBoostedJetTags:probZqq, pfMassDecorrelatedDeepBoostedJetTags:probHbb, pfMassDecorrelatedDeepBoostedJetTags:probHcc, pfMassDecorrelatedDeepBoostedJetTags:probHqqqq, pfMassDecorrelatedDeepBoostedJetTags:probQCDbb, pfMassDecorrelatedDeepBoostedJetTags:probQCDcc, pfMassDecorrelatedDeepBoostedJetTags:probQCDb, pfMassDecorrelatedDeepBoostedJetTags:probQCDc, pfMassDecorrelatedDeepBoostedJetTags:probQCDothers, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:TvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:WvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:ZvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:ZHbbvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:ZbbvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:HbbvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:H4qvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:ZHccvsQCD, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:bbvsLight, pfMassDecorrelatedDeepBoostedDiscriminatorsJetTags:ccvsLight
+DEBUG 2018-12-27 17:46:39,013: 	 Executing command: 'submit'
+DEBUG 2018-12-27 17:46:39,022: 	 Found CRAB cache file /uscms/home/ddash/.crab3
+DEBUG 2018-12-27 17:46:39,031: 	 Checking credentials
+DEBUG 2018-12-27 17:46:39,031: 	 Found proxy file /tmp/x509up_u52937
+DEBUG 2018-12-27 17:46:39,031: 	 Getting proxy life time left
+DEBUG 2018-12-27 17:46:39,135: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -timeleft
+ output : 85863
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:39,239: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -actimeleft
+ output : 85863
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:39,240: 	 Proxy valid for 23:51:03 hours
+DEBUG 2018-12-27 17:46:39,241: 	 Will use CRAB Analysis plugin (i.e. will run an analysis job type).
+DEBUG 2018-12-27 17:46:39,392: 	 Executing : 
+ command : openssl x509 -in ~/.globus/usercert.pem -subject -noout
+ output : subject= /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:39,392: 	 Checking credentials
+DEBUG 2018-12-27 17:46:39,393: 	 Found proxy file /tmp/x509up_u52937
+DEBUG 2018-12-27 17:46:39,393: 	 Getting proxy life time left
+DEBUG 2018-12-27 17:46:39,497: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -timeleft
+ output : 85863
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:39,601: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -actimeleft
+ output : 85863
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:39,601: 	 Proxy valid for 23:51:03 hours
+DEBUG 2018-12-27 17:46:39,705: 	 Executing : 
+ command : env X509_USER_PROXY=/tmp/x509up_u52937 voms-proxy-info -fqan
+ output : /cms/Role=NULL/Capability=NULL
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:40,846: 	 Registering user credentials for server /DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch
+DEBUG 2018-12-27 17:46:40,956: 	 Executing : 
+ command : openssl x509 -in ~/.globus/usercert.pem -subject -noout
+ output : subject= /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:40,956: 	 Getting myproxy life time left for myproxy.cern.ch
+DEBUG 2018-12-27 17:46:40,956: 	 Calculating hash of /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash_cmsweb.cern.ch for credential name
+DEBUG 2018-12-27 17:46:41,862: 	 Executing : 
+ command : myproxy-info -l aad4b2c1b937760f40d1cc9752f3390eba7a72d1 -s myproxy.cern.ch
+ output : username: aad4b2c1b937760f40d1cc9752f3390eba7a72d1
+owner: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+  renewal policy: /DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch
+  trusted retrieval policy: /DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch
+  timeleft: 368:30:54  (15.4 days)
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:46:41,864: 	 Myproxy is valid: 1326654
+DEBUG 2018-12-27 17:46:41,864: 	 Command use: submit
+DEBUG 2018-12-27 17:46:41,864: 	 Options use: ['--config', <WMCore.Configuration.Configuration object at 0x7fddcd88b050>]
+DEBUG 2018-12-27 17:46:43,565: 	 CRABClient version: 3.3.1812
+DEBUG 2018-12-27 17:46:43,566: 	 Instance is prod
+DEBUG 2018-12-27 17:46:43,566: 	 Server base url is cmsweb.cern.ch
+DEBUG 2018-12-27 17:46:43,566: 	 Command url /crabserver/prod/workflow
+DEBUG 2018-12-27 17:46:43,566: 	 Started submission
+DEBUG 2018-12-27 17:46:43,566: 	 Working on /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3
+DEBUG 2018-12-27 17:46:44,792: 	 Loading required information from the environment
+DEBUG 2018-12-27 17:46:44,792: 	 Found CMSSW_10_2_9 for slc6_amd64_gcc700 with base /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9
+DEBUG 2018-12-27 17:46:44,792: 	 Loading required information from the environment
+DEBUG 2018-12-27 17:46:44,792: 	 Found CMSSW_10_2_9 for slc6_amd64_gcc700 with base /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9
+DEBUG 2018-12-27 17:46:45,426: 	 UNIQUE NAME: tarUUID 5a14b5b6-ccf5-4ddd-b1e1-a7538e1479d9 
+DEBUG 2018-12-27 17:46:45,426: 	 self.config: from WMCore.Configuration import Configuration
+config = Configuration()
+config.section_('General')
+config.General.transferLogs = False
+config.General.transferOutputs = True
+config.General.workArea = 'crab_projects'
+config.General.requestName = 'ttbar_HEM_v3'
+config.section_('JobType')
+config.JobType.psetName = 'prod2018MC_NANO.py'
+config.JobType.pluginName = 'Analysis'
+config.JobType.numCores = 1
+config.JobType.sendExternalFolder = False
+config.JobType.maxMemoryMB = 2500
+config.section_('Data')
+config.Data.inputDataset = '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISpring18MiniAOD-HEMPremix_100X_upgrade2018_realistic_v10-v3/MINIAODSIM'
+config.Data.outputDatasetTag = 'test_RunIISpring18MiniAOD-HEMPremix_v10-v3'
+config.Data.publication = False
+config.Data.unitsPerJob = 300
+config.Data.inputDBS = 'global'
+config.Data.splitting = 'Automatic'
+config.Data.allowNonValidInputDataset = True
+config.Data.outLFNDirBase = '/store/user/ddash/StopStudy/TestNanoSUSY'
+config.section_('Site')
+config.Site.storageSite = 'T3_US_FNALLPC'
+config.section_('User')
+config.section_('Debug')
+
+DEBUG 2018-12-27 17:46:45,426: 	 self.config.JobType.psetName: prod2018MC_NANO.py
+INFO 2018-12-27 17:46:45,427: 	 Importing CMSSW configuration prod2018MC_NANO.py
+INFO 2018-12-27 17:46:55,956: 	 Finished importing CMSSW configuration prod2018MC_NANO.py
+DEBUG 2018-12-27 17:46:55,956: 	 Writing CMSSW configuration to /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3/inputs/PSet.py
+DEBUG 2018-12-27 17:46:59,253: 	 The following EDM output files will be collected: ['prod2018MC_NANO.root']
+DEBUG 2018-12-27 17:46:59,254: 	 The following TFile output files will be collected: []
+DEBUG 2018-12-27 17:46:59,254: 	 The following user output files will be collected: []
+DEBUG 2018-12-27 17:46:59,254: 	 Loading required information from the environment
+DEBUG 2018-12-27 17:46:59,254: 	 Found CMSSW_10_2_9 for slc6_amd64_gcc700 with base /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9
+DEBUG 2018-12-27 17:46:59,254: 	 Making tarball in /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3/inputs/5a14b5b6-ccf5-4ddd-b1e1-a7538e1479d9default.tgz
+DEBUG 2018-12-27 17:46:59,258: 	 Checking directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/lib
+DEBUG 2018-12-27 17:46:59,258: 	 Adding directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/lib to tarball
+DEBUG 2018-12-27 17:47:00,349: 	 Checking directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/biglib
+DEBUG 2018-12-27 17:47:00,349: 	 Adding directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/biglib to tarball
+DEBUG 2018-12-27 17:47:00,351: 	 Checking directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/module
+DEBUG 2018-12-27 17:47:00,391: 	 Adding data directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/RecoJets/JetProducers/data to tarball
+DEBUG 2018-12-27 17:47:00,397: 	 Adding data directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/RecoJets/JetProducers/interface to tarball
+DEBUG 2018-12-27 17:47:00,454: 	 Adding data directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoAODTools/data to tarball
+DEBUG 2018-12-27 17:47:04,863: 	 Adding data directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoAODTools/interface to tarball
+DEBUG 2018-12-27 17:47:04,876: 	 Adding data directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoAODTools/python/postprocessing/data to tarball
+DEBUG 2018-12-27 17:47:06,434: 	 Adding data directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/TopTagger/TopTagger/interface to tarball
+DEBUG 2018-12-27 17:47:06,480: 	 Adding data directory /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/TopTagger/TopTagger/data to tarball
+DEBUG 2018-12-27 17:47:07,043: 	 Uploading archive /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3/inputs/5a14b5b6-ccf5-4ddd-b1e1-a7538e1479d9default.tgz (9.170898.1 MB) to the CRAB cache. Using URI https://cmsweb.cern.ch/crabcache
+DEBUG 2018-12-27 17:47:14,874: 	 Loading required information from the environment
+DEBUG 2018-12-27 17:47:14,875: 	 Found CMSSW_10_2_9 for slc6_amd64_gcc700 with base /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9
+DEBUG 2018-12-27 17:47:14,875: 	 Making tarball in /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3/inputs/debugFiles.tgz
+DEBUG 2018-12-27 17:47:14,881: 	 Uploading archive /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3/inputs/debugFiles.tgz (1 KB) to the CRAB cache. Using URI https://cmsweb.cern.ch/crabcache
+DEBUG 2018-12-27 17:47:16,114: 	 Result uploading input files: f110f19af74775abe7b2c087954330931839c70f5114a368625557dd72a9e533.tar.gz 
+INFO 2018-12-27 17:47:16,115: 	 Sending the request to the server
+DEBUG 2018-12-27 17:47:16,115: 	 Submitting {'maxjobruntime': 1250, 'extrajdl': [], 'ignorelocality': 0, 'savelogsflag': 0, 'useparent': 0, 'asyncdest': 'T3_US_FNALLPC', 'algoargs': 300, 'cachefilename': 'f110f19af74775abe7b2c087954330931839c70f5114a368625557dd72a9e533.tar.gz', 'numcores': 1, 'addoutputfiles': [], 'generator': 'pythia', 'maxmemory': 2500, 'publishdbsurl': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter', 'priority': 10, 'jobsw': 'CMSSW_10_2_9', 'edmoutfiles': ['prod2018MC_NANO.root'], 'userfiles': [], 'primarydataset': '', 'inputdata': '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISpring18MiniAOD-HEMPremix_100X_upgrade2018_realistic_v10-v3/MINIAODSIM', 'lfn': '/store/user/ddash/StopStudy/TestNanoSUSY', 'dryrun': 0, 'workflow': 'crab_ttbar_HEM_v3', 'cacheurl': u'https://cmsweb.cern.ch/crabcache', 'nonprodsw': 0, 'tfileoutfiles': [], 'oneEventMode': 0, 'debugfilename': '815b27cf0c393ee3264c3e5776a216ed5dc6e80d42c106a438747e04e8af9993.tar.gz', 'saveoutput': 1, 'publication': 0, 'jobarch': 'slc6_amd64_gcc700', 'totalunits': 0, 'splitalgo': 'Automatic', 'ignoreglobalblacklist': 0, 'nonvaliddata': 1, 'dbsurl': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader', 'publishgroupname': 0, 'jobtype': 'Analysis', 'publishname2': 'test_RunIISpring18MiniAOD-HEMPremix_v10-v3'} 
+DEBUG 2018-12-27 17:47:16,115: 	 Encoded submit request: maxjobruntime=1250&ignorelocality=0&savelogsflag=0&useparent=0&asyncdest=T3_US_FNALLPC&algoargs=300&cachefilename=f110f19af74775abe7b2c087954330931839c70f5114a368625557dd72a9e533.tar.gz&numcores=1&generator=pythia&maxmemory=2500&publishdbsurl=https%3A%2F%2Fcmsweb.cern.ch%2Fdbs%2Fprod%2Fphys03%2FDBSWriter&priority=10&jobsw=CMSSW_10_2_9&primarydataset=&inputdata=%2FTTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8%2FRunIISpring18MiniAOD-HEMPremix_100X_upgrade2018_realistic_v10-v3%2FMINIAODSIM&lfn=%2Fstore%2Fuser%2Fddash%2FStopStudy%2FTestNanoSUSY&dryrun=0&workflow=crab_ttbar_HEM_v3&cacheurl=https%3A%2F%2Fcmsweb.cern.ch%2Fcrabcache&nonprodsw=0&oneEventMode=0&debugfilename=815b27cf0c393ee3264c3e5776a216ed5dc6e80d42c106a438747e04e8af9993.tar.gz&saveoutput=1&publication=0&jobarch=slc6_amd64_gcc700&totalunits=0&splitalgo=Automatic&ignoreglobalblacklist=0&nonvaliddata=1&dbsurl=https%3A%2F%2Fcmsweb.cern.ch%2Fdbs%2Fprod%2Fglobal%2FDBSReader&publishgroupname=0&jobtype=Analysis&publishname2=test_RunIISpring18MiniAOD-HEMPremix_v10-v3&edmoutfiles=prod2018MC_NANO.root
+DEBUG 2018-12-27 17:47:17,688: 	 Result: {u'result': [{u'RequestName': u'181227_234717:ddash_crab_ttbar_HEM_v3'}]}
+INFO 2018-12-27 17:47:17,721: 	 Success: Your task has been delivered to the CRAB3 server.
+INFO 2018-12-27 17:47:17,721: 	 Task name: 181227_234717:ddash_crab_ttbar_HEM_v3
+INFO 2018-12-27 17:47:17,721: 	 Please use 'crab status' to check how the submission process proceeds.
+DEBUG 2018-12-27 17:47:17,721: 	 About to return
+DEBUG 2018-12-27 17:47:59,541: 	 Executing command: 'status'
+DEBUG 2018-12-27 17:47:59,542: 	 Found CRAB cache file /uscms/home/ddash/.crab3
+DEBUG 2018-12-27 17:47:59,592: 	 Checking credentials
+DEBUG 2018-12-27 17:47:59,593: 	 Found proxy file /tmp/x509up_u52937
+DEBUG 2018-12-27 17:47:59,593: 	 Getting proxy life time left
+DEBUG 2018-12-27 17:47:59,697: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -timeleft
+ output : 85783
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:47:59,802: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -actimeleft
+ output : 85783
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:47:59,802: 	 Proxy valid for 23:49:43 hours
+DEBUG 2018-12-27 17:47:59,917: 	 Executing : 
+ command : openssl x509 -in ~/.globus/usercert.pem -subject -noout
+ output : subject= /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:47:59,917: 	 Checking credentials
+DEBUG 2018-12-27 17:47:59,917: 	 Found proxy file /tmp/x509up_u52937
+DEBUG 2018-12-27 17:47:59,917: 	 Getting proxy life time left
+DEBUG 2018-12-27 17:48:00,021: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -timeleft
+ output : 85783
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:48:00,125: 	 Executing : 
+ command : voms-proxy-info -file /tmp/x509up_u52937 -actimeleft
+ output : 85782
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:48:00,126: 	 Proxy lifetime 85783 secs is different from voms extension lifetime 85782 secs for proxy: /tmp/x509up_u52937
+DEBUG 2018-12-27 17:48:00,126: 	 Proxy valid for 23:49:42 hours
+DEBUG 2018-12-27 17:48:01,280: 	 Registering user credentials for server /DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch
+DEBUG 2018-12-27 17:48:01,390: 	 Executing : 
+ command : openssl x509 -in ~/.globus/usercert.pem -subject -noout
+ output : subject= /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:48:01,391: 	 Getting myproxy life time left for myproxy.cern.ch
+DEBUG 2018-12-27 17:48:01,391: 	 Calculating hash of /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash_cmsweb.cern.ch for credential name
+DEBUG 2018-12-27 17:48:02,396: 	 Executing : 
+ command : myproxy-info -l aad4b2c1b937760f40d1cc9752f3390eba7a72d1 -s myproxy.cern.ch
+ output : username: aad4b2c1b937760f40d1cc9752f3390eba7a72d1
+owner: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash
+  renewal policy: /DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch
+  trusted retrieval policy: /DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch
+  timeleft: 368:29:33  (15.4 days)
+
+ error: 
+ retcode : 0
+DEBUG 2018-12-27 17:48:02,398: 	 Myproxy is valid: 1326573
+DEBUG 2018-12-27 17:48:02,398: 	 Command use: status
+DEBUG 2018-12-27 17:48:02,398: 	 Options use: []
+DEBUG 2018-12-27 17:48:03,550: 	 CRABClient version: 3.3.1812
+DEBUG 2018-12-27 17:48:03,550: 	 Instance is prod
+DEBUG 2018-12-27 17:48:03,550: 	 Server base url is cmsweb.cern.ch
+DEBUG 2018-12-27 17:48:03,550: 	 Command url /crabserver/prod/workflow
+DEBUG 2018-12-27 17:48:04,768: 	 Got information from server oracle database: {u'result': [u'181227_234717:ddash_crab_ttbar_HEM_v3', u'None', u'None', u'SUBMITFAILED', u'SUBMIT', u'2018-12-27 23:47:17.628284', u'None', u'2018-12-27 23:47:46.654107', u'Impossible to retrieve proxy from myproxy.cern.ch for /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash.', u'CMSSW_10_2_9', u'slc6_amd64_gcc700', u'/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISpring18MiniAOD-HEMPremix_100X_upgrade2018_realistic_v10-v3/MINIAODSIM', u'T', u'0', u'[]', u'[]', u'Automatic', u"{'splitOnRun': False, 'minutes_per_job': 300, 'halt_job_on_file_boundaries': False, 'runs': [], 'lumis': []}", u'f110f19af74775abe7b2c087954330931839c70f5114a368625557dd72a9e533.tar.gz', u'https://cmsweb.cern.ch/crabcache', u'ddash', u'/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash', u'cms', u'None', u'None', u'test_RunIISpring18MiniAOD-HEMPremix_v10-v3-00000000000000000000000000000000', u'F', u'T3_US_FNALLPC', u'https://cmsweb.cern.ch/dbs/prod/global/DBSReader', u'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter', u'F', u'[]', u'[]', u"['prod2018MC_NANO.root']", u'Analysis', u'pythia', u'None', u'{}', u'[]', u'F', u'crab-prod-tw01', u'[]', u'1250', u'1', u'2500', u'10', u'None', u'[]', u'None', u'None', u'[]', u'[]', u'https://cmsweb.cern.ch/crabserver/prod', u'cmsgwms-collector-global.cern.ch:9620,cmssrv221.fnal.gov:9620', u'None', u'F', u'[]', u'T', u'/store/user/ddash/StopStudy/TestNanoSUSY', u'F', u'None', u'F', u'None', u'TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8', u'None', u'815b27cf0c393ee3264c3e5776a216ed5dc6e80d42c106a438747e04e8af9993.tar.gz', u'None', u'filetransfers', u'F', u'131.225.190.173', u'0.0', u'None'], u'desc': {u'columns': [u'tm_taskname', u'tm_activity', u'panda_jobset_id', u'tm_task_status', u'tm_task_command', u'tm_start_time', u'tm_start_injection', u'tm_end_injection', u'tm_task_failure', u'tm_job_sw', u'tm_job_arch', u'tm_input_dataset', u'tm_nonvalid_input_dataset', u'tm_use_parent', u'tm_site_whitelist', u'tm_site_blacklist', u'tm_split_algo', u'tm_split_args', u'tm_user_sandbox', u'tm_cache_url', u'tm_username', u'tm_user_dn', u'tm_user_vo', u'tm_user_role', u'tm_user_group', u'tm_publish_name', u'tm_publish_groupname', u'tm_asyncdest', u'tm_dbs_url', u'tm_publish_dbs_url', u'tm_publication', u'tm_outfiles', u'tm_tfile_outfiles', u'tm_edm_outfiles', u'tm_job_type', u'tm_generator', u'tm_events_per_lumi', u'tm_arguments', u'panda_resubmitted_jobs', u'tm_save_logs', u'tw_name', u'tm_user_infiles', u'tm_maxjobruntime', u'tm_numcores', u'tm_maxmemory', u'tm_priority', u'tm_output_dataset', u'tm_task_warnings', u'tm_user_webdir', u'tm_scriptexe', u'tm_scriptargs', u'tm_extrajdl', u'tm_asourl', u'tm_collector', u'tm_schedd', u'tm_dry_run', u'tm_user_files', u'tm_transfer_outputs', u'tm_output_lfn', u'tm_ignore_locality', u'tm_fail_limit', u'tm_one_event_mode', u'tm_secondary_input_dataset', u'tm_primary_dataset', u'tm_last_publication', u'tm_debug_files', u'clusterid', u'tm_asodb', u'tm_ignore_global_blacklist', u'tm_submitter_ip_addr', u'tm_totalunits', u'tm_ddm_reqid']}}
+INFO 2018-12-27 17:48:04,769: 	 CRAB project directory:		/uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3
+INFO 2018-12-27 17:48:04,769: 	 Task name:			181227_234717:ddash_crab_ttbar_HEM_v3
+INFO 2018-12-27 17:48:04,769: 	 Grid scheduler - Task Worker:	N/A yet - crab-prod-tw01
+INFO 2018-12-27 17:48:04,769: 	 Status on the CRAB server:	SUBMITFAILED
+INFO 2018-12-27 17:48:04,769: 	 Task URL to use for HELP:	https://cmsweb.cern.ch/crabserver/ui/task/181227_234717%3Addash_crab_ttbar_HEM_v3
+INFO 2018-12-27 17:48:04,769: 	 Dashboard monitoring URL:	http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=ddash&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=181227_234717%3Addash_crab_ttbar_HEM_v3
+ERROR 2018-12-27 17:48:04,769: 	 Failure message from the server:		Impossible to retrieve proxy from myproxy.cern.ch for /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ddash/CN=814363/CN=Dipika Dash.
+DEBUG 2018-12-27 17:48:04,770: 	 The task has not been submitted to the Grid scheduler yet. Not printing job information.
+INFO 2018-12-27 17:48:04,781: 	 Log file is /uscms_data/d3/ddash/mywork/qcd/CMSSW_10_2_9/src/PhysicsTools/NanoSUSY/crab/crab_projects/crab_ttbar_HEM_v3/crab.log

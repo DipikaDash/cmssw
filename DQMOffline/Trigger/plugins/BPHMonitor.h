@@ -102,6 +102,11 @@ private:
   std::string folderName_;
   std::string histoSuffix_;
 
+  edm::InputTag muoInputTag_;
+  edm::InputTag bsInputTag_;
+  edm::InputTag trInputTag_;
+  edm::InputTag phInputTag_;
+
   edm::EDGetTokenT<reco::MuonCollection>        muoToken_;
   edm::EDGetTokenT<reco::BeamSpot>        bsToken_;
   edm::EDGetTokenT<reco::TrackCollection>       trToken_;
@@ -161,7 +166,6 @@ private:
 
   GenericTriggerEventFlag* num_genTriggerEventFlag_;
   GenericTriggerEventFlag* den_genTriggerEventFlag_;
-  PrescaleWeightProvider * prescaleWeightProvider_;
   StringCutObjectSelector<reco::Muon,true>        muoSelection_;
   StringCutObjectSelector<reco::Muon,true>        muoSelection_ref;
   StringCutObjectSelector<reco::Muon,true>        muoSelection_tag;
@@ -199,6 +203,7 @@ private:
   StringCutObjectSelector<reco::Track,true>        trSelection_ref;
   StringCutObjectSelector<reco::Candidate::LorentzVector,true>        DMSelection_ref;
 
+  std::vector<bool> warningPrinted4token_;
 };
 
 #endif // METMONITOR_H

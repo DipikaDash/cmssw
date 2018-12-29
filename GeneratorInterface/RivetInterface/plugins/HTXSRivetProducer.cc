@@ -6,10 +6,11 @@
  *
  */
 
-#include "FWCore/Framework/interface/stream/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/Run.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
@@ -27,7 +28,7 @@ using namespace Rivet;
 using namespace edm;
 using namespace std;
 
-class HTXSRivetProducer : public edm::stream::EDProducer<> {
+class HTXSRivetProducer : public edm::one::EDProducer<edm::one::WatchRuns> {
 public:
     
     explicit HTXSRivetProducer(const edm::ParameterSet& cfg) : 
@@ -43,16 +44,14 @@ public:
         produces<HTXS::HiggsClassification>("HiggsClassification").setBranchAlias("HiggsClassification");
 
     }
-    ~HTXSRivetProducer() override;
+    ~HTXSRivetProducer() ;
     
 private:
     
-    void beginJob();
-    void produce( edm::Event&, const edm::EventSetup&) override;
-    void endJob();
+    void produce( edm::Event&, const edm::EventSetup&) ;
     
-    void beginRun(edm::Run const& iRun, edm::EventSetup const& es) override;
-    void endRun(edm::Run const& iRun, edm::EventSetup const& es) override;
+    void beginRun(edm::Run const& iRun, edm::EventSetup const& es) override ;
+    void endRun(edm::Run const& iRun, edm::EventSetup const& es) override ;
     
     edm::EDGetTokenT<edm::HepMCProduct> _hepmcCollection;
     edm::EDGetTokenT<LHERunInfoProduct> _lheRunInfo;
@@ -69,10 +68,6 @@ private:
 };
 
 HTXSRivetProducer::~HTXSRivetProducer(){
-}
-
-void HTXSRivetProducer::beginJob(){
-    _analysisHandler.addAnalysis(_HTXS);
 }
 
 void HTXSRivetProducer::produce( edm::Event & iEvent, const edm::EventSetup & ) {
@@ -129,6 +124,8 @@ void HTXSRivetProducer::produce( edm::Event & iEvent, const edm::EventSetup & ) 
 
       if (_isFirstEvent){
 
+	_analysisHandler.addAnalysis(_HTXS);
+
           // set the production mode if not done already
           if      ( _prodMode == "GGF"   ) m_HiggsProdMode = HTXS::GGF;
           else if ( _prodMode == "VBF"   ) m_HiggsProdMode = HTXS::VBF;
@@ -140,8 +137,8 @@ void HTXSRivetProducer::produce( edm::Event & iEvent, const edm::EventSetup & ) 
           else if ( _prodMode == "BBH"   ) m_HiggsProdMode = HTXS::BBH;
           else if ( _prodMode == "TH"    ) m_HiggsProdMode = HTXS::TH;
           else if ( _prodMode == "AUTO"  ) {
-              cout<<"Using AUTO for HiggsProdMode, found it to be: "<<m_HiggsProdMode<< "\n";
-              cout<<"(UNKNOWN=0, GGF=1, VBF=2, WH=3, QQ2ZH=4, GG2ZH=5, TTH=6, BBH=7, TH=8)"<<endl;
+              edm::LogInfo ("HTXSRivetProducer") <<"Using AUTO for HiggsProdMode, found it to be: "<<m_HiggsProdMode<< "\n";
+              edm::LogInfo ("HTXSRivetProducer") <<"(UNKNOWN=0, GGF=1, VBF=2, WH=3, QQ2ZH=4, GG2ZH=5, TTH=6, BBH=7, TH=8)"<<endl;
           } else {
               throw cms::Exception("HTXSRivetProducer") << "ProductionMode must be one of: GGF,VBF,WH,ZH,QQ2ZH,GG2ZH,TTH,BBH,TH,AUTO " ; 
           }
@@ -149,7 +146,7 @@ void HTXSRivetProducer::produce( edm::Event & iEvent, const edm::EventSetup & ) 
 
           // at this point the production mode must be known
           if (m_HiggsProdMode == HTXS::UNKNOWN) {
-              cout << "HTXSRivetProducer WARNING: HiggsProduction mode is UNKNOWN" << endl;
+              edm::LogInfo ("HTXSRivetProducer") << "HTXSRivetProducer WARNING: HiggsProduction mode is UNKNOWN" << endl;
           }            
 
           // initialize rivet analysis
@@ -168,12 +165,9 @@ void HTXSRivetProducer::produce( edm::Event & iEvent, const edm::EventSetup & ) 
     }
 }
 
-void HTXSRivetProducer::endJob(){
-    _HTXS->printClassificationSummary();
-}
-
 void HTXSRivetProducer::endRun(edm::Run const& iRun, edm::EventSetup const& es) 
 {
+  _HTXS->printClassificationSummary();
 }
 
 void HTXSRivetProducer::beginRun(edm::Run const& iRun, edm::EventSetup const& es) {
@@ -192,53 +186,53 @@ void HTXSRivetProducer::beginRun(edm::Run const& iRun, edm::EventSetup const& es
                   std::string line=lines.at(iLine);
                   // POWHEG
                   if (line.find("gg_H_quark-mass-effects") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::GGF;
                       break;
                   }
                   if (line.find("Process: HJ") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::GGF;
                       break;
                   }
                   if (line.find("Process: HJJ") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::GGF;
                       break;
                   }
                   if (line.find("VBF_H") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::VBF;
                       break;
                   }
                   if (line.find("HZJ") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::QQ2ZH;
                       break;
                   }
                   if (line.find("ggHZ") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::GG2ZH;
                       break;
                   }
                   // MC@NLO
                   if (line.find("ggh012j") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::GGF;
                       break;
                   }
                   if (line.find("vbfh") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::VBF;
                       break;
                   }
                   if (line.find("zh012j") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::QQ2ZH;
                       break;
                   }
                   if (line.find("ggzh01j") != std::string::npos) {
-                      std::cout<<iLine<< " "<<line<<std::endl;
+                      edm::LogInfo ("HTXSRivetProducer") <<iLine<< " "<<line<<std::endl;
                       m_HiggsProdMode = HTXS::GG2ZH;
                       break;
                   }
